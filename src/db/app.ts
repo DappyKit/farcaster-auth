@@ -2,6 +2,8 @@ import { db } from './index'
 
 export const TABLE_NAME = 'app'
 
+export const MAX_URL_LENGTH = 255
+
 export interface IApp {
   fid: number
   username: string
@@ -9,6 +11,7 @@ export interface IApp {
   profile_image: string
   frame_url: string
   callback_url: string
+  signer_address: string
   data?: string
   is_active?: boolean
   created_at: string

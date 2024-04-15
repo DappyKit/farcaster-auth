@@ -7,6 +7,7 @@ import supertest from 'supertest'
 import { getAppByFid, getAppsCount } from '../../src/db/app'
 import { ICreateRequest } from '../../src/controllers/v1/app/interface/ICreateRequest'
 import { getConfigData, setConfigData } from '../../src/config'
+import { Wallet } from 'ethers'
 
 const testDb = knex(configurations.development)
 
@@ -60,7 +61,9 @@ describe('App', () => {
     const postData: ICreateRequest = {
       frameUrlBytes: '0x123',
       frameCallbackUrlBytes: '0x222',
+      frameSignerAddressBytes: '0x333',
     }
+    const wallet = Wallet.createRandom()
     const authorizedFrameUrl = 'https://auth-frame.com'
     const frameUrl = 'https://example.com'
     const callbackUrl = 'https://example.com/callback'
@@ -91,8 +94,19 @@ describe('App', () => {
           url: authorizedFrameUrl,
           timestamp: new Date().toISOString(),
         }
+      } else if (clickData === postData.frameSignerAddressBytes) {
+        return {
+          isValid: true,
+          fid,
+          username: '',
+          display_name: '',
+          pfp_url: '',
+          inputValue: wallet.address,
+          url: authorizedFrameUrl,
+          timestamp: new Date().toISOString(),
+        }
       } else {
-        throw new Error('Unrecognized click data')
+        throw new Error('Unrecognized mocked click data')
       }
     })
     expect(await getAppByFid(fid)).toBeNull()

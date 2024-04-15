@@ -2,15 +2,39 @@ import { ICreateRequest } from '../interface/ICreateRequest'
 import { getInteractorInfo } from '../../../../utils/farcaster'
 import { validateFrameUrl } from '../../../../utils/frame'
 import { isWithinMaxMinutes } from '../../../../utils/time'
+import { prepareEthAddress } from '../../../../utils/eth'
+import { prepareUrl } from '../../../../utils/url'
 
 export const MAX_REQUESTS_TIME_MINUTES = 10
 
 export interface IAppCreateData {
+  /**
+   * Frame URL
+   */
   frameUrl: string
+  /**
+   * Frame callback URL to receive info about authorization
+   */
   frameCallbackUrl: string
+  /**
+   * Signer address of the Frame service
+   */
+  signerAddress: string
+  /**
+   * Frame owner FID
+   */
   frameOwnerFid: number
+  /**
+   * Username of the Frame owner
+   */
   username: string
+  /**
+   * Display name of the Frame owner
+   */
   displayName: string
+  /**
+   * Profile image of the Frame owner
+   */
   profileImage: string
 }
 
@@ -19,64 +43,81 @@ export async function getAppCreateData(
   authorizedFrameUrl: string,
   data: ICreateRequest,
 ): Promise<IAppCreateData> {
-  const { frameUrlBytes, frameCallbackUrlBytes } = data
+  const { frameUrlBytes, frameCallbackUrlBytes, frameSignerAddressBytes } = data
 
   if (!frameUrlBytes) {
     throw new Error('Invalid request. "frameUrlBytes" is required')
   }
 
   if (!frameCallbackUrlBytes) {
-    throw new Error('Invalid request. "frameCallbackBytes" is required')
+    throw new Error('Invalid request. "frameCallbackUrlBytes" is required')
   }
 
-  const frameUrlData = await getInteractorInfo(neynarApiKey, frameUrlBytes)
-
-  if (!frameUrlData.isValid) {
-    throw new Error('Invalid request. "frameUrlBytes" is invalid')
+  if (!frameSignerAddressBytes) {
+    throw new Error('Invalid request. "frameSignerAddressBytes" is required')
   }
 
-  const frameCallbackData = await getInteractorInfo(neynarApiKey, frameCallbackUrlBytes)
-
-  if (!frameCallbackData.isValid) {
-    throw new Error('Invalid request. "frameCallbackBytes" is invalid')
+  const items = [frameUrlBytes, frameCallbackUrlBytes, frameSignerAddressBytes]
+  const interactorResponses = []
+  for (const item of items) {
+    interactorResponses.push(await getInteractorInfo(neynarApiKey, item))
   }
 
-  if (frameUrlData.fid !== frameCallbackData.fid) {
-    throw new Error('Invalid request. "frameUrlBytes" and "frameCallbackBytes" should belong to the same user')
+  const frameUrlData = interactorResponses[0]
+  const frameCallbackData = interactorResponses[1]
+  const frameSignerAddressData = interactorResponses[2]
+
+  interactorResponses.forEach((response, index) => {
+    if (!response.isValid) {
+      throw new Error(`Interactor data is not correct. Item under "${index}" is not valid`)
+    }
+
+    if (!response.url) {
+      throw new Error(`Interactor data is not correct. Item under "${index}" should have a URL`)
+    }
+
+    if (response.url !== authorizedFrameUrl) {
+      throw new Error(
+        `Interactor data is not correct. Item under "${index}" should have a URL equal to the authorized Frame URL`,
+      )
+    }
+
+    if (!response.timestamp) {
+      throw new Error(`Interactor data is not correct. Item under "${index}" should have a timestamp`)
+    }
+
+    if (!isWithinMaxMinutes(response.timestamp, MAX_REQUESTS_TIME_MINUTES)) {
+      throw new Error(
+        `Interactor data is not correct. Item under "${index}" has an outdated timestamp. Max ${MAX_REQUESTS_TIME_MINUTES} minutes allowed`,
+      )
+    }
+  })
+
+  if (new Set(interactorResponses.map(response => response.fid)).size > 1) {
+    throw new Error('Invalid request. All interactor data should belong to the same user')
   }
 
-  if (!frameUrlData.url) {
-    throw new Error('Invalid request. Url of the interacted Frame should be defined')
+  if (new Set(interactorResponses.map(response => response.url)).size > 1) {
+    throw new Error('Invalid request. All interactor data should belong to the same Frame')
   }
 
-  if (frameUrlData.url !== frameCallbackData.url) {
-    throw new Error('Invalid request. "frameUrlBytes" and "frameCallbackBytes" should belong to the same Frame')
-  }
-
-  if (frameUrlData.url !== authorizedFrameUrl) {
-    throw new Error('Invalid request. "frameUrlBytes" should belong to the authorized Frame')
-  }
-
-  if (!frameUrlData.timestamp || !frameCallbackData.timestamp) {
-    throw new Error('Invalid request. Timestamp should be defined')
-  }
-
-  if (!isWithinMaxMinutes(frameUrlData.timestamp, MAX_REQUESTS_TIME_MINUTES)) {
-    throw new Error(`Invalid request. Timestamp is outdated. Max ${MAX_REQUESTS_TIME_MINUTES} minutes allowed`)
-  }
+  const signerAddress = prepareEthAddress(frameSignerAddressData.inputValue)
+  const frameUrl = prepareUrl(frameUrlData.inputValue)
+  const frameCallbackUrl = prepareUrl(frameCallbackData.inputValue)
 
   try {
-    await validateFrameUrl(frameUrlData.inputValue, frameUrlData.fid)
+    await validateFrameUrl(frameUrl, frameUrlData.fid)
   } catch (e) {
     throw new Error(`Validation frame error: ${(e as Error).message}`)
   }
 
   return {
-    frameUrl: frameUrlData.inputValue,
-    frameCallbackUrl: frameCallbackData.inputValue,
+    frameUrl,
+    frameCallbackUrl,
     frameOwnerFid: frameUrlData.fid,
     username: frameUrlData.username,
     displayName: frameUrlData.display_name,
     profileImage: frameUrlData.pfp_url,
+    signerAddress,
   }
 }

@@ -5,10 +5,17 @@ import {
   AuthorizationRequestStatus,
   createChallenge,
   insertAuthorizationRequest,
-} from '../../../db/authorizationRequest'
+} from '../../../db/authorization-request'
 import { ICreateAuthRequest } from './interface/ICreateAuthRequest'
 import { getRequestCreateData } from './utils/request-create-utils'
 
+/**
+ * Creates an authorization request from the 3rd party Frame's service.
+ * It creates a challenge and inserts the info about user's delegated signer created by the service into the database.
+ * @param req Request
+ * @param res Response
+ * @param next Next function
+ */
 export default async (
   req: Request<ICreateAuthRequest>,
   res: Response<ICreateResponse>,
@@ -16,17 +23,22 @@ export default async (
 ): Promise<void> => {
   try {
     const { neynarApiKey } = getConfigData()
-    const { fid, appFid } = await getRequestCreateData(neynarApiKey, req.body)
+    const { fid, appFid, userSignerAddress, serviceSignature } = await getRequestCreateData(neynarApiKey, req.body)
 
-    await insertAuthorizationRequest({
+    const challenge = createChallenge()
+    const requestId = await insertAuthorizationRequest({
       app_fid: appFid,
       user_fid: fid,
       status: AuthorizationRequestStatus.PENDING,
-      challenge: createChallenge(),
+      challenge: challenge.serialized,
+      user_signer_address: userSignerAddress,
+      service_signature: serviceSignature,
     })
 
     res.json({
       status: 'ok',
+      answer: challenge.answer,
+      requestId,
     })
   } catch (e) {
     next(e)

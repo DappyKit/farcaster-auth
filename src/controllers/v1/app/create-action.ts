@@ -18,11 +18,8 @@ export default async (
 ): Promise<void> => {
   try {
     const { neynarApiKey, authorizedFrameUrl } = getConfigData()
-    const { frameUrl, frameCallbackUrl, frameOwnerFid, username, displayName, profileImage } = await getAppCreateData(
-      neynarApiKey,
-      authorizedFrameUrl,
-      req.body,
-    )
+    const { frameUrl, frameCallbackUrl, frameOwnerFid, username, displayName, profileImage, signerAddress } =
+      await getAppCreateData(neynarApiKey, authorizedFrameUrl, req.body)
 
     await upsertApp({
       fid: frameOwnerFid,
@@ -32,6 +29,7 @@ export default async (
       is_active: true,
       frame_url: frameUrl,
       callback_url: frameCallbackUrl,
+      signer_address: signerAddress,
     })
 
     res.json({

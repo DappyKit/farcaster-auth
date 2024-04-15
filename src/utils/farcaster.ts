@@ -42,27 +42,3 @@ export async function getInteractorInfo(neynarApiKey: string, clickData: string)
     throw new Error('Click data is not valid')
   }
 }
-
-export async function getCastInfo(neynarApiKey: string, clickData: string): Promise<ICastInfo> {
-  const neynarClient = new NeynarAPIClient(neynarApiKey)
-  const result = await neynarClient.validateFrameAction(clickData)
-
-  if (result.valid) {
-    const cast = await neynarClient.lookUpCastByHashOrWarpcastUrl(result.action.cast.hash, CastParamType.Hash)
-
-    return {
-      castId: result.action.cast.hash,
-      initiatorFid: result.action.interactor.fid,
-      fid: cast.cast.author.fid,
-      username: cast.cast.author.username,
-    }
-  } else {
-    throw new Error('Click data is not valid')
-  }
-}
-
-export async function getCastByUrl(neynarApiKey: string, castUrl: string): Promise<CastResponse> {
-  const client = new NeynarAPIClient(neynarApiKey)
-
-  return client.lookUpCastByHashOrWarpcastUrl(castUrl, CastParamType.Url)
-}

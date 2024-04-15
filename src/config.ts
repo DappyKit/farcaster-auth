@@ -18,6 +18,11 @@ export interface IConfigData {
    * Authorized frame URL
    */
   authorizedFrameUrl: string
+
+  /**
+   * Private key for signing delegated addresses
+   */
+  signer: string
 }
 
 /**
@@ -27,6 +32,7 @@ let configData: IConfigData = {
   neynarApiKey: '',
   publicUrl: '',
   authorizedFrameUrl: '',
+  signer: '',
 }
 
 /**
@@ -41,21 +47,18 @@ export function loadConfig(): void {
     throw new Error('PUBLIC_URL env variable not set')
   }
 
-  if (!process.env.PINATA_JWT) {
-    throw new Error('PINATA_JWT env variable not set')
-  }
-
-  if (!process.env.APP_FID) {
-    throw new Error('APP_FID env variable not set')
-  }
-
   if (!process.env.AUTHORIZED_FRAME_URL) {
     throw new Error('AUTHORIZED_FRAME_URL env variable not set')
+  }
+
+  if (!process.env.SIGNER) {
+    throw new Error('SIGNER env variable not set')
   }
 
   configData.neynarApiKey = process.env.NEYNAR_API_KEY
   configData.publicUrl = process.env.PUBLIC_URL
   configData.authorizedFrameUrl = process.env.AUTHORIZED_FRAME_URL
+  configData.signer = process.env.SIGNER
 }
 
 /**

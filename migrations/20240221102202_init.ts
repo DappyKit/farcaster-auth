@@ -10,6 +10,7 @@ export async function up(knex: Knex): Promise<void> {
     table.boolean('is_active').defaultTo(false)
     table.string('frame_url', 255).notNullable()
     table.string('callback_url', 255).notNullable()
+    table.string('signer_address', 40).notNullable()
 
     table.datetime('created_at').notNullable()
     table.datetime('updated_at').notNullable()
@@ -22,6 +23,9 @@ export async function up(knex: Knex): Promise<void> {
 
     table.string('status', 255).notNullable()
     table.string('challenge', 255).notNullable()
+    table.string('user_signer_address', 40).notNullable()
+    table.string('service_signature', 132).notNullable()
+    table.string('proof_signature', 132).defaultTo('')
 
     table.datetime('created_at').notNullable()
     table.datetime('updated_at').notNullable()
