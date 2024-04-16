@@ -340,7 +340,7 @@ export class DelegatedFs {
 
     const userAppNonce = await this.localDataManager.getUserAppNonce(userAddress, proof.applicationAddress)
 
-    if (proof.nonce <= userAppNonce) {
+    if (proof.nonce !== userAppNonce + 1) {
       throw new Error(`Invalid nonce. Expected: ${userAppNonce + 1}`)
     }
 

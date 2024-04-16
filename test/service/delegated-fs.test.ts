@@ -177,4 +177,56 @@ describe('Delegated FS', () => {
       }),
     ).rejects.toThrow('Invalid nonce. Expected: 1')
   })
+
+  it('should accept updates from a legitimate user and reject updates from a fake user', async () => {
+    const localDataManager = createLocalDataManager()
+    const decentralizedStorage = createDecentralizedStorage()
+    const authServiceWallet = Wallet.createRandom()
+    const fs = new DelegatedFs(localDataManager, decentralizedStorage, authServiceWallet.address)
+
+    // Create legitimate and fake users
+    const legitimateUserWallet = Wallet.createRandom()
+    const fakeUserWallet = Wallet.createRandom()
+    const applicationWallet = Wallet.createRandom()
+
+    // First update from legitimate user
+    const legitimateData = 'legitimate data update'
+    const legitimateNonce = (await fs.getUserAppNonce(legitimateUserWallet.address, applicationWallet.address)) + 1
+    const legitimateAuthServiceProofSignature = await DelegatedFs.createDelegateSignature(
+      legitimateUserWallet.address,
+      legitimateUserWallet.address,
+      applicationWallet.address,
+      authServiceWallet,
+    )
+
+    await fs.setUserAppData(legitimateUserWallet.address, legitimateData, {
+      nonce: legitimateNonce,
+      applicationAddress: applicationWallet.address,
+      authServiceProof: legitimateAuthServiceProofSignature,
+      applicationDelegateDataSignature: await DelegatedFs.getDataSignature(
+        legitimateData,
+        legitimateNonce,
+        legitimateUserWallet,
+      ),
+    })
+
+    // Attempt to update from fake user
+    const fakeData = 'fake data update'
+    const fakeNonce = (await fs.getUserAppNonce(legitimateUserWallet.address, applicationWallet.address)) + 1
+    const fakeAuthServiceProofSignature = await DelegatedFs.createDelegateSignature(
+      fakeUserWallet.address,
+      fakeUserWallet.address,
+      applicationWallet.address,
+      authServiceWallet,
+    )
+
+    await expect(
+      fs.setUserAppData(legitimateUserWallet.address, fakeData, {
+        nonce: fakeNonce,
+        applicationAddress: applicationWallet.address,
+        authServiceProof: fakeAuthServiceProofSignature,
+        applicationDelegateDataSignature: await DelegatedFs.getDataSignature(fakeData, fakeNonce, fakeUserWallet),
+      }),
+    ).rejects.toThrow('Invalid auth service proof')
+  })
 })
