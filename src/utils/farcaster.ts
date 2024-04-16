@@ -1,12 +1,4 @@
-import { CastParamType, NeynarAPIClient } from '@neynar/nodejs-sdk'
-import { CastResponse } from '@neynar/nodejs-sdk/build/neynar-api/v2/openapi-farcaster'
-
-export interface ICastInfo {
-  castId: string
-  initiatorFid: number
-  fid: number
-  username: string
-}
+import { NeynarAPIClient } from '@neynar/nodejs-sdk'
 
 export interface InteractorInfo {
   isValid: boolean
