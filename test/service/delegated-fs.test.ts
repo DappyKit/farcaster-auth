@@ -1,13 +1,13 @@
+import { DelegatedFs } from '../../src/service/delegated-fs/delegated-fs'
+import { Wallet } from 'ethers'
+import { prepareEthAddress } from '../../src/utils/eth'
 import {
-  DelegatedFs,
-  IDecentralizedStorage,
   IDelegatedProof,
   ILocalDataManager,
   IStoredData,
   IUserAppHashes,
-} from '../../src/service/delegated-fs'
-import { Wallet } from 'ethers'
-import { prepareEthAddress } from '../../src/utils/eth'
+} from '../../src/service/delegated-fs/interfaces'
+import { createDecentralizedStorage } from '../utils/storage'
 
 interface ILocalData {
   [key: string]: {
@@ -16,25 +16,6 @@ interface ILocalData {
       proof: IDelegatedProof
       hash: string
     }
-  }
-}
-
-function createDecentralizedStorage(): IDecentralizedStorage {
-  let counter = 1
-  const dataItems: { [key: string]: string } = {}
-
-  return {
-    uploadData: jest.fn(async (key: string, data: string): Promise<string> => {
-      const result = counter.toString()
-      counter++
-      dataItems[result] = data
-
-      return result
-    }),
-
-    downloadData: jest.fn(async (hash: string): Promise<string> => {
-      return dataItems[hash] ?? ''
-    }),
   }
 }
 

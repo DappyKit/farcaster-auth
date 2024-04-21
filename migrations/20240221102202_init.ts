@@ -33,9 +33,25 @@ export async function up(knex: Knex): Promise<void> {
 
     table.foreign('app_fid').references('app.fid')
   })
+
+  await knex.schema.createTable('data_content', table => {
+    table.string('user_address', 40).notNullable()
+    table.string('app_address', 40).notNullable()
+    table.text('data', 'longtext').notNullable()
+    table.text('proof', 'longtext').notNullable()
+    table.integer('nonce').notNullable().unsigned()
+    table.string('hash', 64).notNullable()
+    table.datetime('created_at').notNullable()
+    table.datetime('updated_at').notNullable()
+
+    table.primary(['user_address', 'app_address'])
+    table.unique(['user_address', 'app_address'])
+    table.index(['user_address', 'app_address'])
+  })
 }
 
 export async function down(knex: Knex): Promise<void> {
+  await knex.schema.dropTableIfExists('data_content')
   await knex.schema.dropTableIfExists('authorization_request')
   await knex.schema.dropTableIfExists('app')
 }
