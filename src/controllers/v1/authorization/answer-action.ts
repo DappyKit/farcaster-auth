@@ -12,6 +12,12 @@ import { getRequestAnswerData } from './utils/request-create-utils'
 import { signDelegatedAddress } from '../../../utils/crypto'
 import { callbackFrameUrl, ICallbackFailRequest, ICallbackSuccessRequest } from '../../../utils/http'
 
+/**
+ * Handles the answer of the user's answer to the challenge. Called from trusted Frame's service.
+ * @param req Request
+ * @param res Response
+ * @param next Next function
+ */
 export default async (
   req: Request<IAnswerRequest>,
   res: Response<IAnswerResponse>,

@@ -10,7 +10,7 @@ import { ICreateAuthRequest } from './interface/ICreateAuthRequest'
 import { getRequestCreateData } from './utils/request-create-utils'
 
 /**
- * Creates an authorization request from the 3rd party Frame's service.
+ * Creates an authorization request. Called from the 3rd party Frame's service.
  * It creates a challenge and inserts the info about user's delegated signer created by the service into the database.
  * @param req Request
  * @param res Response
