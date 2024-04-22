@@ -23,6 +23,16 @@ export interface IConfigData {
    * Private key for signing delegated addresses
    */
   signer: string
+
+  /**
+   * Pinata JWT key
+   */
+  pinataJWT: string
+
+  /**
+   * IPFS URL
+   */
+  ipfsUrl: string
 }
 
 /**
@@ -33,6 +43,8 @@ let configData: IConfigData = {
   publicUrl: '',
   authorizedFrameUrl: '',
   signer: '',
+  pinataJWT: '',
+  ipfsUrl: '',
 }
 
 /**
@@ -55,10 +67,20 @@ export function loadConfig(): void {
     throw new Error('SIGNER env variable not set')
   }
 
+  if (!process.env.PINATA_JWT) {
+    throw new Error('PINATA_JWT env variable not set')
+  }
+
+  if (!process.env.IPFS_URL) {
+    throw new Error('IPFS_URL env variable not set')
+  }
+
   configData.neynarApiKey = process.env.NEYNAR_API_KEY
   configData.publicUrl = process.env.PUBLIC_URL
   configData.authorizedFrameUrl = process.env.AUTHORIZED_FRAME_URL
   configData.signer = process.env.SIGNER
+  configData.pinataJWT = process.env.PINATA_JWT
+  configData.ipfsUrl = process.env.IPFS_URL
 }
 
 /**
