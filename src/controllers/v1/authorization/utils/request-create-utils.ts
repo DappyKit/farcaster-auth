@@ -27,6 +27,10 @@ export interface IRequestCreateData {
   serviceSignature: string
 }
 
+export interface IRequestListData {
+  fid: number
+}
+
 export async function getRequestAnswerData(
   neynarApiKey: string,
   authorizedFrameUrl: string,
@@ -129,5 +133,39 @@ export async function getRequestCreateData(
     appFid: appData.fid,
     userSignerAddress,
     serviceSignature: prepareEthSignature(serviceSignature),
+  }
+}
+
+export async function getRequestListData(
+  neynarApiKey: string,
+  authorizedFrameUrl: string,
+  data: ICreateAuthRequest,
+): Promise<IRequestListData> {
+  const { messageBytesProof } = data
+
+  if (!messageBytesProof) {
+    throw new Error('"messageBytesProof" is required')
+  }
+
+  const proofData = await getInteractorInfo(neynarApiKey, messageBytesProof)
+
+  if (!proofData.isValid) {
+    throw new Error('"messageBytesProof" is invalid')
+  }
+
+  if (!proofData.url) {
+    throw new Error('Url of the interacted Frame should be defined')
+  }
+
+  if (proofData.url !== authorizedFrameUrl) {
+    throw new Error('Url of the interacted Frame does not match with the authorized url')
+  }
+
+  if (!isWithinMaxMinutes(proofData.timestamp, MAX_REQUESTS_TIME_MINUTES)) {
+    throw new Error(`Timestamp is outdated. Max ${MAX_REQUESTS_TIME_MINUTES} minutes allowed`)
+  }
+
+  return {
+    fid: proofData.fid,
   }
 }

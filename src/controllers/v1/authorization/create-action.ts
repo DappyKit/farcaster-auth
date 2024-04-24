@@ -5,6 +5,7 @@ import {
   AuthorizationRequestStatus,
   createChallenge,
   insertAuthorizationRequest,
+  rejectAllPendingAuthorizationRequests,
 } from '../../../db/authorization-request'
 import { ICreateAuthRequest } from './interface/ICreateAuthRequest'
 import { getRequestCreateData } from './utils/request-create-utils'
@@ -25,6 +26,7 @@ export default async (
     const { neynarApiKey } = getConfigData()
     const { fid, appFid, userSignerAddress, serviceSignature } = await getRequestCreateData(neynarApiKey, req.body)
 
+    await rejectAllPendingAuthorizationRequests(fid, appFid)
     const challenge = createChallenge()
     const requestId = await insertAuthorizationRequest({
       app_fid: appFid,

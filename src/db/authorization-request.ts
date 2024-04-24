@@ -67,6 +67,21 @@ export function checkChallenge(challenge: string, answer: number): boolean {
   return correct === answer
 }
 
+export async function rejectAllPendingAuthorizationRequests(userFid: number, appFid: number): Promise<void> {
+  await db(TABLE_NAME)
+    .where({ user_fid: userFid, app_fid: appFid })
+    .whereIn('status', [AuthorizationRequestStatus.PENDING])
+    .update({ status: AuthorizationRequestStatus.REJECTED, updated_at: db.fn.now() })
+}
+
+export async function getActiveAuthorizationRequestByUser(userFid: number): Promise<IAuthorizationRequest | undefined> {
+  return db<IAuthorizationRequest>(TABLE_NAME)
+    .where({ user_fid: userFid })
+    .whereIn('status', [AuthorizationRequestStatus.PENDING])
+    .orderBy('id', 'desc')
+    .first()
+}
+
 export async function getAuthorizationRequestById(id: number): Promise<IAuthorizationRequest | undefined> {
   return db<IAuthorizationRequest>(TABLE_NAME).where({ id }).first()
 }
