@@ -1,4 +1,4 @@
-**Delegated FS - Using DappyKit via Farcaster**
+# Delegated FS - Using DappyKit via Farcaster
 
 DappyKit application authorization without leaving Farcaster is necessary to provide Farcaster users with DappyKit capabilities and technologies.
 
@@ -18,9 +18,20 @@ Such applications can exist both within the Farcaster ecosystem and as independe
 - After completing the flow, the third-party application can manage data in the isolated data space of the user.
 - After the key is revoked, the data in this space can also be cleared.
 
+## App Registration
 
+To register your application for interaction with DappyKit within Farcaster, you need to do the following:
+- Create a Frame and insert the tag `<meta property="frame:owner" content="FID"/>`, where FID is the unique number of your account in Farcaster from which you will be registering the application.
+- Create a Callback URL that will receive events about successful user authentications.
+- Create an ETH private key that will sign actions of your application.
+- Go to Frame DappyKit Auth and enter the public address of your ETH signer, Frame URL, and Callback service URL.
+- Done! After this, you can request access to the user's isolated data area, which is available only to the user and your application.
 
-Testnet
+Explore the examples of using DappyKit Auth to start rapid development.
+
+## Custom Auth Service Deployment
+
+### Testnet
 
 ```shell
 # install dependencies
@@ -59,7 +70,7 @@ npm run start
 npx knex migrate:make my_new_migration
 ```
 
-Mainnet
+### Mainnet
 
 ```shell
 # install dependencies

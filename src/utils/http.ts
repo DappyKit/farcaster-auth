@@ -55,7 +55,6 @@ export async function callbackFrameUrl(url: string, data: ICallbackResult): Prom
       throw new Error(`HTTP error! Status: ${response.status}`)
     }
 
-    // Parsing the JSON response
     const json = await response.json()
 
     if (json.result !== true) {

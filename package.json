@@ -15,8 +15,7 @@
     "lint:check": "eslint \"src/**/*.ts\" \"test/**/*.ts\" && prettier --check \"src/**/*.ts\" \"test/**/*.ts\"",
     "check:types": "tsc --project tsconfig.test.json",
     "check-all": "npm run lint:check && npm run check:types && npm run test",
-    "follow": "ts-node src/script/follow.ts",
-    "follow-all": "ts-node src/script/follow-all.ts"
+    "test-request": "ts-node src/scripts/create-auth-request.ts"
   },
   "author": "DappyKit",
   "license": "MIT",

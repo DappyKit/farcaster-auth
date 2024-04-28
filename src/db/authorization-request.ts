@@ -61,6 +61,12 @@ export function createChallenge(): IChallengeData {
   }
 }
 
+export function getChallengeOptions(challenge: string): number[] {
+  const { options } = JSON.parse(challenge)
+
+  return options
+}
+
 export function checkChallenge(challenge: string, answer: number): boolean {
   const { correct } = JSON.parse(challenge)
 
