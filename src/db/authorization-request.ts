@@ -16,7 +16,7 @@ export enum AuthorizationRequestStatus {
 
 export interface IAuthorizationRequest {
   id: number
-  app_fid: number
+  app_signer_address: string
   user_fid: number
   status: AuthorizationRequestStatus
   /**
@@ -73,9 +73,9 @@ export function checkChallenge(challenge: string, answer: number): boolean {
   return correct === answer
 }
 
-export async function rejectAllPendingAuthorizationRequests(userFid: number, appFid: number): Promise<void> {
+export async function rejectAllPendingAuthorizationRequests(userFid: number, appSignerAddress: string): Promise<void> {
   await db(TABLE_NAME)
-    .where({ user_fid: userFid, app_fid: appFid })
+    .where({ user_fid: userFid, app_signer_address: appSignerAddress })
     .whereIn('status', [AuthorizationRequestStatus.PENDING])
     .update({ status: AuthorizationRequestStatus.REJECTED, updated_at: db.fn.now() })
 }

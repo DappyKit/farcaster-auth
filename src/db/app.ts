@@ -6,9 +6,6 @@ export const MAX_URL_LENGTH = 255
 
 export interface IApp {
   fid: number
-  username: string
-  display_name: string
-  profile_image: string
   frame_url: string
   callback_url: string
   signer_address: string
@@ -20,10 +17,6 @@ export interface IApp {
 
 export async function upsertApp(userData: Omit<IApp, 'created_at' | 'updated_at'>): Promise<void> {
   const date = db.fn.now()
-  // in the rare cases the data can be null
-  userData.display_name = userData.display_name || ''
-  userData.profile_image = userData.profile_image || ''
-  userData.username = userData.username || ''
   const newItem = { ...userData, updated_at: date }
 
   await db(TABLE_NAME)
@@ -34,6 +27,12 @@ export async function upsertApp(userData: Omit<IApp, 'created_at' | 'updated_at'
 
 export async function getAppByFid(fid: number): Promise<IApp | null> {
   const result = await db(TABLE_NAME).where('fid', fid).first()
+
+  return result || null
+}
+
+export async function getAppBySignerAddress(signerAddress: string): Promise<IApp | null> {
+  const result = await db(TABLE_NAME).where('signer_address', signerAddress).first()
 
   return result || null
 }

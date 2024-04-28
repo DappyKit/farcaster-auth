@@ -76,9 +76,6 @@ async function initAppMock(): Promise<IInitAppMock> {
 
   await upsertApp({
     fid: appFid,
-    username: '',
-    display_name: '',
-    profile_image: '',
     frame_url: frameUrl,
     signer_address: prepareEthAddress(appWallet.address),
     callback_url: '',

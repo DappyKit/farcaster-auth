@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import { getConfigData } from '../../../config'
 import { ICreateResponse } from './interface/ICreateResponse'
-import { upsertApp } from '../../../db/app'
+import { getAppBySignerAddress, upsertApp } from '../../../db/app'
 import { ICreateRequest } from './interface/ICreateRequest'
 import { getAppCreateData } from './utils/app-create-utils'
 
@@ -18,14 +18,18 @@ export default async (
 ): Promise<void> => {
   try {
     const { neynarApiKey, authorizedFrameUrl } = getConfigData()
-    const { frameUrl, frameCallbackUrl, frameOwnerFid, username, displayName, profileImage, signerAddress } =
-      await getAppCreateData(neynarApiKey, authorizedFrameUrl, req.body)
+    const { frameUrl, frameCallbackUrl, frameOwnerFid, signerAddress } = await getAppCreateData(
+      neynarApiKey,
+      authorizedFrameUrl,
+      req.body,
+    )
+
+    if (await getAppBySignerAddress(signerAddress)) {
+      throw new Error('App already exists')
+    }
 
     await upsertApp({
       fid: frameOwnerFid,
-      username,
-      display_name: displayName,
-      profile_image: profileImage,
       is_active: true,
       frame_url: frameUrl,
       callback_url: frameCallbackUrl,

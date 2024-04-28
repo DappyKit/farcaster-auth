@@ -2,15 +2,13 @@ import type { Knex } from 'knex'
 
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('app', table => {
-    table.bigInteger('fid').unsigned().primary().unique().notNullable()
-    table.string('username', 255).notNullable()
-    table.string('display_name', 255).notNullable()
-    table.string('profile_image', 255).notNullable()
+    table.bigInteger('fid').unsigned().notNullable()
     table.text('data', 'longtext').defaultTo('')
     table.boolean('is_active').defaultTo(false)
     table.string('frame_url', 255).notNullable()
     table.string('callback_url', 255).notNullable()
-    table.string('signer_address', 40).notNullable()
+    // lowercased eth address without 0x
+    table.string('signer_address', 40).notNullable().primary().unique()
 
     table.datetime('created_at').notNullable()
     table.datetime('updated_at').notNullable()
@@ -18,7 +16,7 @@ export async function up(knex: Knex): Promise<void> {
 
   await knex.schema.createTable('authorization_request', table => {
     table.bigIncrements('id').primary().unsigned()
-    table.bigInteger('app_fid').unsigned().notNullable()
+    table.string('app_signer_address', 40).notNullable()
     table.bigInteger('user_fid').unsigned().notNullable()
 
     table.string('status', 255).notNullable()
@@ -31,7 +29,7 @@ export async function up(knex: Knex): Promise<void> {
     table.datetime('updated_at').notNullable()
     table.datetime('valid_until').notNullable()
 
-    table.foreign('app_fid').references('app.fid')
+    table.foreign('app_signer_address').references('app.signer_address')
   })
 
   await knex.schema.createTable('data_content', table => {

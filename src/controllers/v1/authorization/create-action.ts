@@ -24,12 +24,15 @@ export default async (
 ): Promise<void> => {
   try {
     const { neynarApiKey } = getConfigData()
-    const { fid, appFid, userSignerAddress, serviceSignature } = await getRequestCreateData(neynarApiKey, req.body)
+    const { fid, appSignerAddress, userSignerAddress, serviceSignature } = await getRequestCreateData(
+      neynarApiKey,
+      req.body,
+    )
 
-    await rejectAllPendingAuthorizationRequests(fid, appFid)
+    await rejectAllPendingAuthorizationRequests(fid, appSignerAddress)
     const challenge = createChallenge()
     const requestId = await insertAuthorizationRequest({
-      app_fid: appFid,
+      app_signer_address: appSignerAddress,
       user_fid: fid,
       status: AuthorizationRequestStatus.PENDING,
       challenge: challenge.serialized,

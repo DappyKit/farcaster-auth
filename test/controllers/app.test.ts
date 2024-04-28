@@ -9,6 +9,17 @@ import { ICreateRequest } from '../../src/controllers/v1/app/interface/ICreateRe
 import { getConfigData, setConfigData } from '../../src/config'
 import { Wallet } from 'ethers'
 
+export interface InputMock {
+  /**
+   * Click bytes
+   */
+  bytes: string
+  /**
+   * Extracted input from the click bytes
+   */
+  input: string
+}
+
 const testDb = knex(configurations.development)
 
 jest.mock('../../src/utils/frame', () => {
@@ -33,6 +44,27 @@ const getInteractorInfoMock = getInteractorInfo as jest.Mock
 
 function mockInteractorFunc(func: (neynarApiKey: string, clickData: string) => InteractorInfo) {
   getInteractorInfoMock.mockImplementation(func)
+}
+
+function mockInputData(fid: number, frameUrl: string, authorizedFrameUrl: string, data: InputMock[]) {
+  mockInteractorFunc((neynarApiKey: string, clickData: string) => {
+    const foundItem = data.find(item => item.bytes === clickData)
+
+    if (!foundItem) {
+      throw new Error('Unrecognized mocked click data: ' + clickData)
+    }
+
+    return {
+      isValid: true,
+      fid,
+      username: '',
+      display_name: '',
+      pfp_url: '',
+      inputValue: foundItem.input,
+      url: authorizedFrameUrl,
+      timestamp: new Date().toISOString(),
+    }
+  })
 }
 
 describe('App', () => {
@@ -71,44 +103,20 @@ describe('App', () => {
       ...getConfigData(),
       authorizedFrameUrl,
     })
-    mockInteractorFunc((neynarApiKey: string, clickData: string) => {
-      if (clickData === postData.frameUrlBytes) {
-        return {
-          isValid: true,
-          fid,
-          username: '',
-          display_name: '',
-          pfp_url: '',
-          inputValue: frameUrl,
-          url: authorizedFrameUrl,
-          timestamp: new Date().toISOString(),
-        }
-      } else if (clickData === postData.frameCallbackUrlBytes) {
-        return {
-          isValid: true,
-          fid,
-          username: '',
-          display_name: '',
-          pfp_url: '',
-          inputValue: callbackUrl,
-          url: authorizedFrameUrl,
-          timestamp: new Date().toISOString(),
-        }
-      } else if (clickData === postData.frameSignerAddressBytes) {
-        return {
-          isValid: true,
-          fid,
-          username: '',
-          display_name: '',
-          pfp_url: '',
-          inputValue: wallet.address,
-          url: authorizedFrameUrl,
-          timestamp: new Date().toISOString(),
-        }
-      } else {
-        throw new Error('Unrecognized mocked click data')
-      }
-    })
+    mockInputData(fid, frameUrl, authorizedFrameUrl, [
+      {
+        bytes: postData.frameUrlBytes,
+        input: frameUrl,
+      },
+      {
+        bytes: postData.frameCallbackUrlBytes,
+        input: callbackUrl,
+      },
+      {
+        bytes: postData.frameSignerAddressBytes,
+        input: wallet.address,
+      },
+    ])
     expect(await getAppByFid(fid)).toBeNull()
     expect(await getAppsCount()).toEqual(0)
 
@@ -118,7 +126,74 @@ describe('App', () => {
     expect(await getAppsCount()).toEqual(1)
 
     const data1 = (await supertestApp.post(`/v1/app/create`).send(postData)).body
-    expect(data1).toEqual({ status: 'ok' })
+    expect(data1).toEqual({ status: 'error', message: 'App already exists' })
     expect(await getAppsCount()).toEqual(1)
+  })
+
+  it('should create multiple apps', async () => {
+    const fid = 123
+    const postData1: ICreateRequest = {
+      frameUrlBytes: '0x111',
+      frameCallbackUrlBytes: '0x222',
+      frameSignerAddressBytes: '0x333',
+    }
+    const postData2: ICreateRequest = {
+      frameUrlBytes: '0x444',
+      frameCallbackUrlBytes: '0x555',
+      frameSignerAddressBytes: '0x666',
+    }
+
+    const wallet1 = Wallet.createRandom()
+    const wallet2 = Wallet.createRandom()
+
+    const appInput1Mock: InputMock[] = [
+      {
+        bytes: postData1.frameUrlBytes,
+        input: 'https://example.com',
+      },
+      {
+        bytes: postData1.frameCallbackUrlBytes,
+        input: 'https://example.com/callback',
+      },
+      {
+        bytes: postData1.frameSignerAddressBytes,
+        input: wallet1.address,
+      },
+    ]
+
+    const appInput2Mock: InputMock[] = [
+      {
+        bytes: postData2.frameUrlBytes,
+        input: 'https://example22.com',
+      },
+      {
+        bytes: postData2.frameCallbackUrlBytes,
+        input: 'https://example222.com/callback',
+      },
+      {
+        bytes: postData2.frameSignerAddressBytes,
+        input: wallet2.address,
+      },
+    ]
+
+    const authorizedFrameUrl = 'https://auth-frame.com'
+    const frameUrl = 'https://example.com'
+    setConfigData({
+      ...getConfigData(),
+      authorizedFrameUrl,
+    })
+    expect(await getAppByFid(fid)).toBeNull()
+    expect(await getAppsCount()).toEqual(0)
+
+    mockInputData(fid, frameUrl, authorizedFrameUrl, appInput1Mock)
+    const data = (await supertestApp.post(`/v1/app/create`).send(postData1)).body
+    expect(data).toEqual({ status: 'ok' })
+    expect(await getAppByFid(fid)).toBeDefined()
+    expect(await getAppsCount()).toEqual(1)
+
+    mockInputData(fid, frameUrl, authorizedFrameUrl, appInput2Mock)
+    const data1 = (await supertestApp.post(`/v1/app/create`).send(postData2)).body
+    expect(data1).toEqual({ status: 'ok' })
+    expect(await getAppsCount()).toEqual(2)
   })
 })

@@ -14,9 +14,8 @@ async function start() {
 
   const frameUrl = process.env.TEST_FRAME_URL
   const callbackUrl = process.env.TEST_CALLBACK_URL
-  // address w/o 0x lowercased
+  // address w/o 0x, lowercased
   const signerAddress = process.env.TEST_SIGNER_ADDRESS
-  const frameOwnerId = Number(process.env.TEST_FRAME_OWNER_ID) || 1
   const targetUserId = 354669
 
   if (!frameUrl || !callbackUrl || !signerAddress) {
@@ -24,21 +23,18 @@ async function start() {
   }
 
   await upsertApp({
-    fid: frameOwnerId,
-    username: '[TEST Username]',
-    display_name: '[Test Name]',
-    profile_image: 'https://test.com/test.png',
+    fid: 1,
     frame_url: frameUrl,
     callback_url: callbackUrl,
     signer_address: signerAddress,
     is_active: true,
   })
 
-  await rejectAllPendingAuthorizationRequests(targetUserId, frameOwnerId)
+  await rejectAllPendingAuthorizationRequests(targetUserId, signerAddress)
   const challenge = createChallenge()
   const userSigner = Wallet.createRandom()
   await insertAuthorizationRequest({
-    app_fid: frameOwnerId,
+    app_signer_address: signerAddress,
     user_fid: targetUserId,
     status: AuthorizationRequestStatus.PENDING,
     challenge: challenge.serialized,

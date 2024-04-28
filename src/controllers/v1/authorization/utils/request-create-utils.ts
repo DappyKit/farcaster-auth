@@ -2,7 +2,7 @@ import { ICreateAuthRequest } from '../interface/ICreateAuthRequest'
 import { getInteractorInfo } from '../../../../utils/farcaster'
 import { isWithinMaxMinutes } from '../../../../utils/time'
 import { MAX_REQUESTS_TIME_MINUTES } from '../../app/utils/app-create-utils'
-import { getAppByFid, getAppByUrl, IApp } from '../../../../db/app'
+import { getAppBySignerAddress, getAppByUrl, IApp } from '../../../../db/app'
 import { extractSignerAddress } from '../../../../utils/crypto'
 import { prepareEthAddress, prepareEthSignature } from '../../../../utils/eth'
 import { IAnswerRequest } from '../interface/IAnswerRequest'
@@ -22,7 +22,7 @@ export interface IRequestAnswerData {
 
 export interface IRequestCreateData {
   fid: number
-  appFid: number
+  appSignerAddress: string
   userSignerAddress: string
   serviceSignature: string
 }
@@ -69,7 +69,7 @@ export async function getRequestAnswerData(
     throw new Error('User fid does not match with the proof data fid')
   }
 
-  const app = await getAppByFid(authRequest.app_fid)
+  const app = await getAppBySignerAddress(authRequest.app_signer_address)
 
   if (!app) {
     throw new Error('App not found')
@@ -130,7 +130,7 @@ export async function getRequestCreateData(
 
   return {
     fid: proofData.fid,
-    appFid: appData.fid,
+    appSignerAddress: appData.signer_address,
     userSignerAddress,
     serviceSignature: prepareEthSignature(serviceSignature),
   }
