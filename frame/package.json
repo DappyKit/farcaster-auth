@@ -1,0 +1,21 @@
+{
+  "name": "frame",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "ENV=development frog dev",
+    "start": "frog"
+  },
+  "dependencies": {
+    "@hono/node-server": "latest",
+    "@neynar/nodejs-sdk": "^1.15.0",
+    "dotenv": "^16.4.5",
+    "frog": "latest",
+    "hono": "^4",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/uuid": "^9.0.8",
+    "typescript": "latest"
+  }
+}
