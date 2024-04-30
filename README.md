@@ -57,7 +57,7 @@ exit;
 npx knex migrate:latest --env development
 
 # start deployer service via PM2
-pm2 start npm --name "[Testnet] Farcaster Auth" -- run start
+pm2 start npm --name "[Testnet] Farcaster Auth API" -- run start
 
 # OR start the server manually
 npm run start
@@ -96,7 +96,7 @@ exit;
 npx knex migrate:latest --env production
 
 # start deployer service via PM2
-pm2 start npm --name "[Mainnet] Farcaster Auth" -- run start
+pm2 start npm --name "[Mainnet] Farcaster Auth API" -- run start
 
 # OR start the server manually
 npm run start
