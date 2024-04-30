@@ -10,7 +10,6 @@
     "start:dev": "nodemon",
     "build": "rimraf ./build && tsc",
     "start": "ts-node src/index.ts",
-    "start-posting": "ts-node src/service/posting.ts",
     "test": "jest --runInBand",
     "lint:check": "eslint \"src/**/*.ts\" \"test/**/*.ts\" && prettier --check \"src/**/*.ts\" \"test/**/*.ts\"",
     "check:types": "tsc --project tsconfig.test.json",
