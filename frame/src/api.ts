@@ -77,5 +77,15 @@ export async function createApp(
     body: JSON.stringify({ frameSignerAddressBytes, frameUrlBytes, frameCallbackUrlBytes }),
   })
 
-  return req.json()
+  const response = (await req.json()) as IAnswerResponse
+
+  if (response.status !== 'ok') {
+    if (response.message) {
+      throw new Error(response.message)
+    } else {
+      throw new Error('Unknown backend error')
+    }
+  }
+
+  return response
 }
