@@ -119,6 +119,16 @@ export async function setProofSignature(requestId: number, proofSignature: strin
   await db(TABLE_NAME).where({ id: requestId }).update({ proof_signature: proofSignature, updated_at: db.fn.now() })
 }
 
+export async function findSuccessfulRequest(
+  userFid: number,
+  appSignerAddress: string,
+): Promise<IAuthorizationRequest | undefined> {
+  return db<IAuthorizationRequest>(TABLE_NAME)
+    .where({ user_fid: userFid, app_signer_address: appSignerAddress, status: AuthorizationRequestStatus.ACCEPTED })
+    .orderBy('id', 'desc')
+    .first()
+}
+
 export async function insertAuthorizationRequest(
   authorizationRequestData: Omit<IAuthorizationRequest, 'id' | 'created_at' | 'updated_at' | 'valid_until'>,
   validUntil?: string,

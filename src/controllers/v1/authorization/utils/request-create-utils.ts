@@ -4,13 +4,14 @@ import { isWithinMaxMinutes } from '../../../../utils/time'
 import { MAX_REQUESTS_TIME_MINUTES } from '../../app/utils/app-create-utils'
 import { getAppBySignerAddress, getAppByUrl, IApp } from '../../../../db/app'
 import { extractSignerAddress } from '../../../../utils/crypto'
-import { prepareEthAddress, prepareEthSignature } from '../../../../utils/eth'
+import { is0xEthAddress, prepareEthAddress, prepareEthSignature } from '../../../../utils/eth'
 import { IAnswerRequest } from '../interface/IAnswerRequest'
 import {
   AuthorizationRequestStatus,
   getAuthorizationRequestByIdStatus,
   IAuthorizationRequest,
 } from '../../../../db/authorization-request'
+import { IIsAuthorizedRequest } from '../interface/IIsAuthorizedRequest'
 
 export interface IRequestAnswerData {
   fid: number
@@ -167,5 +168,30 @@ export async function getRequestListData(
 
   return {
     fid: proofData.fid,
+  }
+}
+
+export function getRequestIsAuthorizedData(data: IIsAuthorizedRequest): { fid: number; appSignerAddress: string } {
+  const { fid, appSignerAddress } = data
+
+  if (!fid) {
+    throw new Error('"uid" is required')
+  }
+
+  if (fid <= 0) {
+    throw new Error('"uid" is invalid')
+  }
+
+  if (!appSignerAddress) {
+    throw new Error('"appSignerAddress" is required')
+  }
+
+  if (!is0xEthAddress(appSignerAddress)) {
+    throw new Error('"appSignerAddress" is invalid ETH address')
+  }
+
+  return {
+    fid,
+    appSignerAddress: prepareEthAddress(appSignerAddress),
   }
 }

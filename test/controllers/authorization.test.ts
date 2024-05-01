@@ -17,6 +17,8 @@ import { AuthorizationRequestStatus, getAuthorizationRequestById } from '../../s
 import { extractSignerAddress, SIGNATURE_LENGTH_WITHOUT_0x } from '../../src/utils/crypto'
 import { IListRequest } from '../../src/controllers/v1/authorization/interface/IListRequest'
 import { IListResponse } from '../../src/controllers/v1/authorization/interface/IListResponse'
+import { IIsAuthorizedRequest } from '../../src/controllers/v1/authorization/interface/IIsAuthorizedRequest'
+import { IIsAuthorizedResponse } from '../../src/controllers/v1/authorization/interface/IIsAuthorizedResponse'
 
 const testDb = knex(configurations.development)
 
@@ -53,6 +55,7 @@ export interface IInitAppMock {
   authServiceWallet: HDNodeWallet
   userWallet: HDNodeWallet
   appWallet: HDNodeWallet
+  interactorFid: number
 }
 
 async function initAppMock(): Promise<IInitAppMock> {
@@ -85,6 +88,7 @@ async function initAppMock(): Promise<IInitAppMock> {
     userWallet,
     appWallet,
     authServiceWallet,
+    interactorFid,
   }
 }
 
@@ -207,5 +211,50 @@ describe('Authorization', () => {
 
     const listResponse2 = (await supertestApp.post(`/v1/authorization/list`).send(postData)).body as IListResponse
     expect(listResponse2).toStrictEqual({ status: 'error', message: 'No active authorization request found' })
+  })
+
+  it('should return correct status of the user', async () => {
+    mockCallbackFrameUrl({ success: true })
+    const { userWallet, appWallet, authServiceWallet, interactorFid } = await initAppMock()
+
+    const isAuthorizedData: IIsAuthorizedRequest = {
+      fid: interactorFid,
+      appSignerAddress: appWallet.address,
+    }
+    const userStatus1 = (await supertestApp.post(`/v1/authorization/is-authorized`).send(isAuthorizedData))
+      .body as IIsAuthorizedResponse
+    expect(userStatus1).toStrictEqual({ status: 'not-authorized', isAuthorized: false })
+
+    const postData: ICreateAuthRequest = {
+      messageBytesProof: '0x123',
+      userSignerAddress: userWallet.address,
+      serviceSignature: await appWallet.signMessage(prepareEthAddress(userWallet.address)),
+    }
+    const data = (await supertestApp.post(`/v1/authorization/create`).send(postData)).body as ICreateResponse
+    expect(data).toEqual({ status: 'ok', requestId: 1, answer: data.answer })
+
+    const userStatus2 = (await supertestApp.post(`/v1/authorization/is-authorized`).send(isAuthorizedData))
+      .body as IIsAuthorizedResponse
+    expect(userStatus2).toStrictEqual({ status: 'not-authorized', isAuthorized: false })
+
+    const answerData1: IAnswerRequest = {
+      requestId: data.requestId,
+      messageBytesProof: '0x123',
+      answer: data.answer,
+    }
+    expect(callbackFrameUrlMock).toHaveBeenCalledTimes(0)
+    const answer1 = (await supertestApp.post(`/v1/authorization/answer`).send(answerData1)).body as IAnswerResponse
+    expect(answer1.status).toBe('ok')
+    expect(callbackFrameUrlMock).toHaveBeenCalledTimes(1)
+    const callbackData = callbackFrameUrlMock.mock.calls[0][1] as ICallbackSuccessRequest
+    expect(callbackData.userSignerAddress).toEqual(prepareEthAddress(userWallet.address))
+
+    expect(extractSignerAddress(prepareEthAddress(userWallet.address), `0x${callbackData.proof}`)).toStrictEqual(
+      prepareEthAddress(authServiceWallet.address),
+    )
+
+    const userStatus3 = (await supertestApp.post(`/v1/authorization/is-authorized`).send(isAuthorizedData))
+      .body as IIsAuthorizedResponse
+    expect(userStatus3).toStrictEqual({ status: 'ok', isAuthorized: true })
   })
 })
