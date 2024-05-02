@@ -20,29 +20,39 @@ export async function runStressTest(
 
   const decentralizedStorage = createDecentralizedStorage()
   expect(decentralizedStorage.downloadData).toHaveBeenCalledTimes(0)
+  // signer of the auth service for creating proofs
   const authServiceWallet = Wallet.createRandom()
   const fs = new DelegatedFs(createLocalDataManager(), decentralizedStorage, authServiceWallet.address)
+  // addresses of user addresses managing their FID
   const users = new Array(USERS_COUNT).fill(null).map(() => Wallet.createRandom())
+  // addresses of delegated addresses created by a third-party application for managing user data
+  const delegates = new Array(USERS_COUNT).fill(null).map(() => Wallet.createRandom())
+  // addresses of applications that manage user data via delegated addresses
   const applications = new Array(APPLICATIONS_COUNT).fill(null).map(() => Wallet.createRandom())
 
-  for (const userWallet of users) {
+  for (const [userIndex, userWallet] of users.entries()) {
     for (const applicationWallet of applications) {
       for (let i = 0; i < OPERATIONS_COUNT; i++) {
         const data = `data from user ${userWallet.address} app ${applicationWallet.address} change ${i}`
         const nonce = (await fs.getUserAppNonce(userWallet.address, applicationWallet.address)) + 1
+        const delegatedWallet = delegates[userIndex]
+        // proof that the auth service returns for further interaction with user data
         const authServiceProofSignature = await DelegatedFs.createDelegateSignature(
           userWallet.address,
-          userWallet.address,
+          delegatedWallet.address,
           applicationWallet.address,
           authServiceWallet,
         )
 
+        // set data with delegated signature
         await fs.setUserAppData(userWallet.address, data, {
           nonce,
           applicationAddress: applicationWallet.address,
           authServiceProof: authServiceProofSignature,
-          applicationDelegateDataSignature: await DelegatedFs.getDataSignature(data, nonce, userWallet),
+          applicationDelegateDataSignature: await DelegatedFs.getDataSignature(data, nonce, delegatedWallet),
         })
+
+        expect((await fs.getUserAppData(userWallet.address, applicationWallet.address)).data).toEqual(data)
       }
     }
   }

@@ -51,7 +51,16 @@ export class DelegatedFs {
    * @param applicationAddress Application address
    */
   static getDelegatedText(userAddress: string, userDelegatedAddress: string, applicationAddress: string): string {
-    return `${prepareEthAddress(userAddress)}${prepareEthAddress(userDelegatedAddress)}${prepareEthAddress(applicationAddress)}`
+    userAddress = prepareEthAddress(userAddress)
+    userDelegatedAddress = prepareEthAddress(userDelegatedAddress)
+    applicationAddress = prepareEthAddress(applicationAddress)
+    const addresses = new Set([userAddress, userDelegatedAddress, applicationAddress])
+
+    if (addresses.size !== 3) {
+      throw new Error('Delegated text addresses must be unique')
+    }
+
+    return `${userAddress}${userDelegatedAddress}${applicationAddress}`
   }
 
   /**
@@ -182,7 +191,7 @@ export class DelegatedFs {
    * @param applicationAddress Application address
    */
   public async getUserAppData(userAddress: string, applicationAddress: string): Promise<IStoredData> {
-    return this.localDataManager.getUserAppData(userAddress, applicationAddress)
+    return this.localDataManager.getUserAppData(prepareEthAddress(userAddress), prepareEthAddress(applicationAddress))
   }
 
   /**

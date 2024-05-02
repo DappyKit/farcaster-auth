@@ -51,7 +51,9 @@ describe('Delegated FS', () => {
 
     // Create legitimate and fake users
     const legitimateUserWallet = Wallet.createRandom()
+    const delegatedWallet = Wallet.createRandom()
     const fakeUserWallet = Wallet.createRandom()
+    const fakeDelegatedWallet = Wallet.createRandom()
     const applicationWallet = Wallet.createRandom()
 
     // First update from legitimate user
@@ -59,7 +61,7 @@ describe('Delegated FS', () => {
     const legitimateNonce = (await fs.getUserAppNonce(legitimateUserWallet.address, applicationWallet.address)) + 1
     const legitimateAuthServiceProofSignature = await DelegatedFs.createDelegateSignature(
       legitimateUserWallet.address,
-      legitimateUserWallet.address,
+      delegatedWallet.address,
       applicationWallet.address,
       authServiceWallet,
     )
@@ -71,7 +73,7 @@ describe('Delegated FS', () => {
       applicationDelegateDataSignature: await DelegatedFs.getDataSignature(
         legitimateData,
         legitimateNonce,
-        legitimateUserWallet,
+        delegatedWallet,
       ),
     })
 
@@ -80,7 +82,7 @@ describe('Delegated FS', () => {
     const fakeNonce = (await fs.getUserAppNonce(legitimateUserWallet.address, applicationWallet.address)) + 1
     const fakeAuthServiceProofSignature = await DelegatedFs.createDelegateSignature(
       fakeUserWallet.address,
-      fakeUserWallet.address,
+      fakeDelegatedWallet.address,
       applicationWallet.address,
       authServiceWallet,
     )
@@ -90,7 +92,7 @@ describe('Delegated FS', () => {
         nonce: fakeNonce,
         applicationAddress: applicationWallet.address,
         authServiceProof: fakeAuthServiceProofSignature,
-        applicationDelegateDataSignature: await DelegatedFs.getDataSignature(fakeData, fakeNonce, fakeUserWallet),
+        applicationDelegateDataSignature: await DelegatedFs.getDataSignature(fakeData, fakeNonce, fakeDelegatedWallet),
       }),
     ).rejects.toThrow('Invalid auth service proof')
   })
