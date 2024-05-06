@@ -33,7 +33,7 @@ export async function getDataContentByUserAndApp(userAddress: string, appAddress
     .first()
 
   if (!result) {
-    throw new Error('Date Content item not found')
+    throw new Error('DataContent item not found')
   }
 
   return result

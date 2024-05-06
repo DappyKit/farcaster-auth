@@ -45,7 +45,7 @@ describe('Delegated FS MySQL', () => {
       applicationDelegateDataSignature: 'signature1',
     }
 
-    await expect(fsMySQL.getUserAppData(userAddress, appAddress)).rejects.toThrow('Date Content item not found')
+    await expect(fsMySQL.getUserAppData(userAddress, appAddress)).rejects.toThrow('DataContent item not found')
     await fsMySQL.setUserAppData(userAddress, data1, proof, hash1)
     const response1 = await fsMySQL.getUserAppData(userAddress, appAddress)
     expect(response1).toEqual({

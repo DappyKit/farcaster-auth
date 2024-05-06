@@ -3,33 +3,22 @@ import configurations from '../../knexfile'
 import { db } from '../../src/db'
 import supertest from 'supertest'
 import app from '../../src/app'
-import { getInteractorInfo, InteractorInfo } from '../../src/utils/farcaster'
-import { upsertApp } from '../../src/db/app'
+import { getInteractorInfo } from '../../src/utils/farcaster'
 import { ICreateAuthRequest } from '../../src/controllers/v1/authorization/interface/ICreateAuthRequest'
-import { HDNodeWallet, Wallet } from 'ethers'
 import { prepareEthAddress } from '../../src/utils/eth'
 import { ICreateResponse } from '../../src/controllers/v1/authorization/interface/ICreateResponse'
 import { IAnswerRequest } from '../../src/controllers/v1/authorization/interface/IAnswerRequest'
 import { IAnswerResponse } from '../../src/controllers/v1/authorization/interface/IAnswerResponse'
 import { callbackFrameUrl, ICallbackResponse, ICallbackSuccessRequest } from '../../src/utils/http'
-import { getConfigData, setConfigData } from '../../src/config'
 import { AuthorizationRequestStatus, getAuthorizationRequestById } from '../../src/db/authorization-request'
 import { extractSignerAddress, SIGNATURE_LENGTH_WITHOUT_0x } from '../../src/utils/crypto'
 import { IListRequest } from '../../src/controllers/v1/authorization/interface/IListRequest'
 import { IListResponse } from '../../src/controllers/v1/authorization/interface/IListResponse'
 import { IIsAuthorizedRequest } from '../../src/controllers/v1/authorization/interface/IIsAuthorizedRequest'
 import { IIsAuthorizedResponse } from '../../src/controllers/v1/authorization/interface/IIsAuthorizedResponse'
+import { insertMockedApp } from '../utils/app'
 
 const testDb = knex(configurations.development)
-
-jest.mock('../../src/utils/farcaster', () => {
-  const originalModule = jest.requireActual('../../src/utils/farcaster')
-
-  return {
-    ...originalModule,
-    getInteractorInfo: jest.fn().mockResolvedValue({}),
-  }
-})
 
 jest.mock('../../src/utils/http', () => {
   const originalModule = jest.requireActual('../../src/utils/farcaster')
@@ -40,33 +29,23 @@ jest.mock('../../src/utils/http', () => {
   }
 })
 
-const getInteractorInfoMock = getInteractorInfo as jest.Mock
-const callbackFrameUrlMock = callbackFrameUrl as jest.Mock
+jest.mock('../../src/utils/farcaster', () => {
+  const originalModule = jest.requireActual('../../src/utils/farcaster')
 
-function mockInteractorInfo(data: InteractorInfo) {
-  getInteractorInfoMock.mockReturnValue(data)
-}
+  return {
+    ...originalModule,
+    getInteractorInfo: jest.fn().mockResolvedValue({}),
+  }
+})
+
+const callbackFrameUrlMock = callbackFrameUrl as jest.Mock
 
 function mockCallbackFrameUrl(data: ICallbackResponse) {
   callbackFrameUrlMock.mockReturnValue(data)
 }
 
-export interface IInitAppMock {
-  authServiceWallet: HDNodeWallet
-  userWallet: HDNodeWallet
-  appWallet: HDNodeWallet
-  interactorFid: number
-}
-
-async function initAppMock(): Promise<IInitAppMock> {
-  const frameUrl = 'https://3rd-party-frame.com'
-  const userWallet = Wallet.createRandom()
-  const appWallet = Wallet.createRandom()
-  const authServiceWallet = Wallet.createRandom()
-  const interactorFid = 123
-  const appFid = 777
-  setConfigData({ ...getConfigData(), authorizedFrameUrl: frameUrl, signer: authServiceWallet.privateKey })
-  mockInteractorInfo({
+function mockInteractor(interactorFid: number, frameUrl: string): void {
+  ;(getInteractorInfo as jest.Mock).mockReturnValue({
     isValid: true,
     fid: interactorFid,
     username: '',
@@ -76,20 +55,6 @@ async function initAppMock(): Promise<IInitAppMock> {
     url: frameUrl,
     timestamp: new Date().toISOString(),
   })
-
-  await upsertApp({
-    fid: appFid,
-    frame_url: frameUrl,
-    signer_address: prepareEthAddress(appWallet.address),
-    callback_url: '',
-  })
-
-  return {
-    userWallet,
-    appWallet,
-    authServiceWallet,
-    interactorFid,
-  }
 }
 
 describe('Authorization', () => {
@@ -114,7 +79,7 @@ describe('Authorization', () => {
   })
 
   it('should create authorization request', async () => {
-    const { userWallet, appWallet } = await initAppMock()
+    const { userWallet, appWallet } = await insertMockedApp(mockInteractor)
 
     const postData: ICreateAuthRequest = {
       messageBytesProof: '0x123',
@@ -127,7 +92,7 @@ describe('Authorization', () => {
 
   it('should answer to authorization request', async () => {
     mockCallbackFrameUrl({ success: true })
-    const { userWallet, appWallet, authServiceWallet } = await initAppMock()
+    const { userWallet, appWallet, authServiceWallet } = await insertMockedApp(mockInteractor)
     const postData: ICreateAuthRequest = {
       messageBytesProof: '0x123',
       userSignerAddress: userWallet.address,
@@ -165,7 +130,7 @@ describe('Authorization', () => {
   })
 
   it('should return active authorization request', async () => {
-    const { userWallet, appWallet } = await initAppMock()
+    const { userWallet, appWallet } = await insertMockedApp(mockInteractor)
 
     const postData: ICreateAuthRequest = {
       messageBytesProof: '0x123',
@@ -187,7 +152,7 @@ describe('Authorization', () => {
   })
 
   it('should reject authorization request', async () => {
-    const { userWallet, appWallet } = await initAppMock()
+    const { userWallet, appWallet } = await insertMockedApp(mockInteractor)
     const createData: ICreateAuthRequest = {
       messageBytesProof: '0x123',
       userSignerAddress: userWallet.address,
@@ -215,7 +180,7 @@ describe('Authorization', () => {
 
   it('should return correct status of the user', async () => {
     mockCallbackFrameUrl({ success: true })
-    const { userWallet, appWallet, authServiceWallet, interactorFid } = await initAppMock()
+    const { userWallet, appWallet, authServiceWallet, interactorFid } = await insertMockedApp(mockInteractor)
 
     const isAuthorizedData: IIsAuthorizedRequest = {
       fid: interactorFid,
