@@ -1,4 +1,5 @@
 import { NeynarAPIClient } from '@neynar/nodejs-sdk'
+import { prepareEthAddress } from './eth'
 
 export interface InteractorInfo {
   isValid: boolean
@@ -30,7 +31,7 @@ export async function getInteractorInfo(neynarApiKey: string, clickData: string)
       url,
       timestamp,
       inputValue,
-      custodyAddress: custody_address,
+      custodyAddress: prepareEthAddress(custody_address),
     }
   } else {
     throw new Error('Click data is not valid')
