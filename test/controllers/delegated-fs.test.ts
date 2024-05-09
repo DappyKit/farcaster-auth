@@ -114,19 +114,20 @@ describe('Delegated FS', () => {
   })
 
   it('should store and get data', async () => {
-    const { authServiceWallet, userWallet, appWallet, interactorFid } = await insertMockedApp(mockInteractor)
+    const { authServiceWallet, userMainWallet, appWallet, interactorFid } = await insertMockedApp(mockInteractor)
     const delegatedWallet = Wallet.createRandom()
     await insertAuthorizationRequest({
       app_signer_address: prepareEthAddress(appWallet.address),
       user_fid: interactorFid,
       status: AuthorizationRequestStatus.ACCEPTED,
       challenge: '',
-      user_signer_address: '',
+      user_main_address: '',
+      user_delegated_address: '',
       service_signature: '',
     })
 
     const authServiceProof = await DelegatedFs.createDelegateSignature(
-      userWallet.address,
+      userMainWallet.address,
       delegatedWallet.address,
       appWallet.address,
       authServiceWallet,
@@ -135,7 +136,7 @@ describe('Delegated FS', () => {
     const dataContent1 = 'Peace labor may!'
     const data0: ILightFsSaveRequest = {
       data: dataContent0,
-      userAddress: userWallet.address,
+      userAddress: userMainWallet.address,
       proof: {
         nonce: 0,
         applicationAddress: appWallet.address,
@@ -145,7 +146,7 @@ describe('Delegated FS', () => {
     }
     const data1: ILightFsSaveRequest = {
       data: dataContent1,
-      userAddress: userWallet.address,
+      userAddress: userMainWallet.address,
       proof: {
         nonce: 1,
         applicationAddress: appWallet.address,
@@ -159,7 +160,7 @@ describe('Delegated FS', () => {
     const answer2 = (
       await supertestApp
         .get(
-          `/v1/delegated-fs/get-by-address?userAddress=${userWallet.address}&applicationAddress=${appWallet.address}`,
+          `/v1/delegated-fs/get-by-address?userAddress=${userMainWallet.address}&applicationAddress=${appWallet.address}`,
         )
         .send()
     ).text
@@ -171,7 +172,9 @@ describe('Delegated FS', () => {
 
     const answer4 = (
       await supertestApp
-        .get(`/v1/delegated-fs/get-user-info?userAddress=${userWallet.address}&applicationAddress=${appWallet.address}`)
+        .get(
+          `/v1/delegated-fs/get-user-info?userAddress=${userMainWallet.address}&applicationAddress=${appWallet.address}`,
+        )
         .send()
     ).body as IUserInfo
     expect(answer4.nonce).toBe(0)
@@ -181,26 +184,29 @@ describe('Delegated FS', () => {
 
     const answer6 = (
       await supertestApp
-        .get(`/v1/delegated-fs/get-user-info?userAddress=${userWallet.address}&applicationAddress=${appWallet.address}`)
+        .get(
+          `/v1/delegated-fs/get-user-info?userAddress=${userMainWallet.address}&applicationAddress=${appWallet.address}`,
+        )
         .send()
     ).body as IUserInfo
     expect(answer6.nonce).toBe(1)
   })
 
   it('should throw error in case of storing too big data', async () => {
-    const { authServiceWallet, userWallet, appWallet, interactorFid } = await insertMockedApp(mockInteractor)
+    const { authServiceWallet, userMainWallet, appWallet, interactorFid } = await insertMockedApp(mockInteractor)
     const delegatedWallet = Wallet.createRandom()
     await insertAuthorizationRequest({
       app_signer_address: prepareEthAddress(appWallet.address),
       user_fid: interactorFid,
       status: AuthorizationRequestStatus.ACCEPTED,
       challenge: '',
-      user_signer_address: '',
+      user_main_address: '',
+      user_delegated_address: '',
       service_signature: '',
     })
 
     const authServiceProof = await DelegatedFs.createDelegateSignature(
-      userWallet.address,
+      userMainWallet.address,
       delegatedWallet.address,
       appWallet.address,
       authServiceWallet,
@@ -208,7 +214,7 @@ describe('Delegated FS', () => {
     const dataContent = 'a'.repeat(DEFAULT_DELEGATED_FS_OPTIONS.maxDataLength + 1)
     const data: ILightFsSaveRequest = {
       data: dataContent,
-      userAddress: userWallet.address,
+      userAddress: userMainWallet.address,
       proof: {
         nonce: 0,
         applicationAddress: appWallet.address,

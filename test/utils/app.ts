@@ -5,16 +5,18 @@ import { prepareEthAddress } from '../../src/utils/eth'
 
 export interface IInitAppMock {
   authServiceWallet: HDNodeWallet | Wallet
-  userWallet: HDNodeWallet
+  userMainWallet: HDNodeWallet
+  userDelegatedWallet: HDNodeWallet
   appWallet: HDNodeWallet
   interactorFid: number
 }
 
 export async function insertMockedApp(
-  mockInteractorCallback: (interactorFid: number, frameUrl: string) => void,
+  mockInteractorCallback: (interactorFid: number, custodyAddress: string, frameUrl: string) => void,
 ): Promise<IInitAppMock> {
   const frameUrl = 'https://3rd-party-frame.com'
-  const userWallet = Wallet.createRandom()
+  const userMainWallet = Wallet.createRandom()
+  const userDelegatedWallet = Wallet.createRandom()
   const appWallet = Wallet.createRandom()
 
   const signer = getConfigData().signer
@@ -22,7 +24,7 @@ export async function insertMockedApp(
   const interactorFid = 123
   const appFid = 777
   setConfigData({ ...getConfigData(), authorizedFrameUrl: frameUrl, signer: authServiceWallet.privateKey })
-  mockInteractorCallback(interactorFid, frameUrl)
+  mockInteractorCallback(interactorFid, prepareEthAddress(userMainWallet.address), frameUrl)
 
   await upsertApp({
     fid: appFid,
@@ -32,7 +34,8 @@ export async function insertMockedApp(
   })
 
   return {
-    userWallet,
+    userMainWallet,
+    userDelegatedWallet,
     appWallet,
     authServiceWallet,
     interactorFid,

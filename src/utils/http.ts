@@ -1,7 +1,9 @@
 export interface ICallbackResult {
   success: boolean
   requestId: number
-  userSignerAddress: string
+  userMainAddress: string
+  userDelegatedAddress: string
+  applicationAddress: string
 }
 
 export interface ICallbackSuccessRequest extends ICallbackResult {

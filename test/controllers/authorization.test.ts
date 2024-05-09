@@ -5,7 +5,7 @@ import supertest from 'supertest'
 import app from '../../src/app'
 import { getInteractorInfo } from '../../src/utils/farcaster'
 import { ICreateAuthRequest } from '../../src/controllers/v1/authorization/interface/ICreateAuthRequest'
-import { prepareEthAddress } from '../../src/utils/eth'
+import { prepareEthAddress, prepareEthSignature } from '../../src/utils/eth'
 import { ICreateResponse } from '../../src/controllers/v1/authorization/interface/ICreateResponse'
 import { IAnswerRequest } from '../../src/controllers/v1/authorization/interface/IAnswerRequest'
 import { IAnswerResponse } from '../../src/controllers/v1/authorization/interface/IAnswerResponse'
@@ -17,6 +17,9 @@ import { IListResponse } from '../../src/controllers/v1/authorization/interface/
 import { IIsAuthorizedRequest } from '../../src/controllers/v1/authorization/interface/IIsAuthorizedRequest'
 import { IIsAuthorizedResponse } from '../../src/controllers/v1/authorization/interface/IIsAuthorizedResponse'
 import { insertMockedApp } from '../utils/app'
+import { DelegatedFs } from '../../src/service/delegated-fs/delegated-fs'
+import { Wallet } from 'ethers'
+import { getConfigData } from '../../src/config'
 
 const testDb = knex(configurations.development)
 
@@ -44,7 +47,7 @@ function mockCallbackFrameUrl(data: ICallbackResponse) {
   callbackFrameUrlMock.mockReturnValue(data)
 }
 
-function mockInteractor(interactorFid: number, frameUrl: string): void {
+function mockInteractor(interactorFid: number, custodyAddress: string, frameUrl: string): void {
   ;(getInteractorInfo as jest.Mock).mockReturnValue({
     isValid: true,
     fid: interactorFid,
@@ -54,6 +57,7 @@ function mockInteractor(interactorFid: number, frameUrl: string): void {
     inputValue: '',
     url: frameUrl,
     timestamp: new Date().toISOString(),
+    custodyAddress,
   })
 }
 
@@ -79,12 +83,12 @@ describe('Authorization', () => {
   })
 
   it('should create authorization request', async () => {
-    const { userWallet, appWallet } = await insertMockedApp(mockInteractor)
+    const { userMainWallet, appWallet } = await insertMockedApp(mockInteractor)
 
     const postData: ICreateAuthRequest = {
       messageBytesProof: '0x123',
-      userSignerAddress: userWallet.address,
-      serviceSignature: await appWallet.signMessage(prepareEthAddress(userWallet.address)),
+      userDelegatedAddress: userMainWallet.address,
+      serviceSignature: await appWallet.signMessage(prepareEthAddress(userMainWallet.address)),
     }
     const data = (await supertestApp.post(`/v1/authorization/create`).send(postData)).body as ICreateResponse
     expect(data).toEqual({ status: 'ok', answer: data.answer, requestId: data.requestId })
@@ -92,11 +96,11 @@ describe('Authorization', () => {
 
   it('should answer to authorization request', async () => {
     mockCallbackFrameUrl({ success: true })
-    const { userWallet, appWallet, authServiceWallet } = await insertMockedApp(mockInteractor)
+    const { userMainWallet, userDelegatedWallet, appWallet, authServiceWallet } = await insertMockedApp(mockInteractor)
     const postData: ICreateAuthRequest = {
       messageBytesProof: '0x123',
-      userSignerAddress: userWallet.address,
-      serviceSignature: await appWallet.signMessage(prepareEthAddress(userWallet.address)),
+      userDelegatedAddress: userDelegatedWallet.address,
+      serviceSignature: await appWallet.signMessage(prepareEthAddress(userDelegatedWallet.address)),
     }
     const data = (await supertestApp.post(`/v1/authorization/create`).send(postData)).body as ICreateResponse
     expect(data).toEqual({ status: 'ok', requestId: 1, answer: data.answer })
@@ -111,11 +115,14 @@ describe('Authorization', () => {
     expect(answer1.status).toBe('ok')
     expect(callbackFrameUrlMock).toHaveBeenCalledTimes(1)
     const callbackData = callbackFrameUrlMock.mock.calls[0][1] as ICallbackSuccessRequest
-    expect(callbackData.userSignerAddress).toEqual(prepareEthAddress(userWallet.address))
+    expect(callbackData.userDelegatedAddress).toEqual(prepareEthAddress(userDelegatedWallet.address))
 
-    expect(extractSignerAddress(prepareEthAddress(userWallet.address), `0x${callbackData.proof}`)).toStrictEqual(
-      prepareEthAddress(authServiceWallet.address),
-    )
+    expect(
+      extractSignerAddress(
+        DelegatedFs.getDelegatedText(userMainWallet.address, userDelegatedWallet.address, appWallet.address),
+        `0x${callbackData.proof}`,
+      ),
+    ).toStrictEqual(prepareEthAddress(authServiceWallet.address))
 
     callbackFrameUrlMock.mockReset()
     expect(callbackFrameUrlMock).toHaveBeenCalledTimes(0)
@@ -130,12 +137,12 @@ describe('Authorization', () => {
   })
 
   it('should return active authorization request', async () => {
-    const { userWallet, appWallet } = await insertMockedApp(mockInteractor)
+    const { userMainWallet, appWallet } = await insertMockedApp(mockInteractor)
 
     const postData: ICreateAuthRequest = {
       messageBytesProof: '0x123',
-      userSignerAddress: userWallet.address,
-      serviceSignature: await appWallet.signMessage(prepareEthAddress(userWallet.address)),
+      userDelegatedAddress: userMainWallet.address,
+      serviceSignature: await appWallet.signMessage(prepareEthAddress(userMainWallet.address)),
     }
     const postDataList: IListRequest = {
       messageBytesProof: '0x123',
@@ -152,11 +159,11 @@ describe('Authorization', () => {
   })
 
   it('should reject authorization request', async () => {
-    const { userWallet, appWallet } = await insertMockedApp(mockInteractor)
+    const { userMainWallet, appWallet } = await insertMockedApp(mockInteractor)
     const createData: ICreateAuthRequest = {
       messageBytesProof: '0x123',
-      userSignerAddress: userWallet.address,
-      serviceSignature: await appWallet.signMessage(prepareEthAddress(userWallet.address)),
+      userDelegatedAddress: userMainWallet.address,
+      serviceSignature: await appWallet.signMessage(prepareEthAddress(userMainWallet.address)),
     }
     const postData: IListRequest = {
       messageBytesProof: '0x123',
@@ -179,8 +186,10 @@ describe('Authorization', () => {
   })
 
   it('should return correct status of the user', async () => {
+    callbackFrameUrlMock.mockReset()
     mockCallbackFrameUrl({ success: true })
-    const { userWallet, appWallet, authServiceWallet, interactorFid } = await insertMockedApp(mockInteractor)
+    const { userMainWallet, userDelegatedWallet, appWallet, authServiceWallet, interactorFid } =
+      await insertMockedApp(mockInteractor)
 
     const isAuthorizedData: IIsAuthorizedRequest = {
       fid: interactorFid,
@@ -192,8 +201,8 @@ describe('Authorization', () => {
 
     const postData: ICreateAuthRequest = {
       messageBytesProof: '0x123',
-      userSignerAddress: userWallet.address,
-      serviceSignature: await appWallet.signMessage(prepareEthAddress(userWallet.address)),
+      userDelegatedAddress: userDelegatedWallet.address,
+      serviceSignature: await appWallet.signMessage(prepareEthAddress(userDelegatedWallet.address)),
     }
     const data = (await supertestApp.post(`/v1/authorization/create`).send(postData)).body as ICreateResponse
     expect(data).toEqual({ status: 'ok', requestId: 1, answer: data.answer })
@@ -212,14 +221,96 @@ describe('Authorization', () => {
     expect(answer1.status).toBe('ok')
     expect(callbackFrameUrlMock).toHaveBeenCalledTimes(1)
     const callbackData = callbackFrameUrlMock.mock.calls[0][1] as ICallbackSuccessRequest
-    expect(callbackData.userSignerAddress).toEqual(prepareEthAddress(userWallet.address))
+    expect(callbackData.userDelegatedAddress).toEqual(prepareEthAddress(userDelegatedWallet.address))
 
-    expect(extractSignerAddress(prepareEthAddress(userWallet.address), `0x${callbackData.proof}`)).toStrictEqual(
-      prepareEthAddress(authServiceWallet.address),
-    )
+    expect(
+      extractSignerAddress(
+        DelegatedFs.getDelegatedText(userMainWallet.address, userDelegatedWallet.address, appWallet.address),
+        `0x${callbackData.proof}`,
+      ),
+    ).toStrictEqual(prepareEthAddress(authServiceWallet.address))
 
     const userStatus3 = (await supertestApp.post(`/v1/authorization/is-authorized`).send(isAuthorizedData))
       .body as IIsAuthorizedResponse
     expect(userStatus3).toStrictEqual({ status: 'ok', isAuthorized: true })
+  })
+
+  it('should get proof an authorization request', async () => {
+    callbackFrameUrlMock.mockReset()
+    mockCallbackFrameUrl({ success: true })
+    const { userMainWallet, userDelegatedWallet, appWallet, authServiceWallet } = await insertMockedApp(mockInteractor)
+    const serviceSignature = await appWallet.signMessage(prepareEthAddress(userDelegatedWallet.address))
+    const postData: ICreateAuthRequest = {
+      messageBytesProof: '0x123',
+      userDelegatedAddress: userDelegatedWallet.address,
+      serviceSignature,
+    }
+    const data = (await supertestApp.post(`/v1/authorization/create`).send(postData)).body as ICreateResponse
+    expect(data).toEqual({ status: 'ok', requestId: 1, answer: data.answer })
+
+    expect(
+      (
+        await supertestApp
+          .get(
+            `/v1/authorization/get-proof?userAddress=${userMainWallet.address}&applicationAddress=${appWallet.address}`,
+          )
+          .send()
+      ).body,
+    ).toEqual({
+      status: 'error',
+      message: 'Successful authorization request not found',
+    })
+
+    const answerData1: IAnswerRequest = {
+      requestId: data.requestId,
+      messageBytesProof: '0x123',
+      answer: data.answer,
+    }
+
+    expect(callbackFrameUrlMock).toHaveBeenCalledTimes(0)
+    const answer1 = (await supertestApp.post(`/v1/authorization/answer`).send(answerData1)).body as IAnswerResponse
+    expect(answer1.status).toBe('ok')
+    expect(callbackFrameUrlMock).toHaveBeenCalledTimes(1)
+    const callbackData = callbackFrameUrlMock.mock.calls[0][1] as ICallbackSuccessRequest
+    expect(callbackData.userDelegatedAddress).toEqual(prepareEthAddress(userDelegatedWallet.address))
+
+    expect(
+      (
+        await supertestApp
+          .get(
+            `/v1/authorization/get-proof?userAddress=${userMainWallet.address}&applicationAddress=${appWallet.address}`,
+          )
+          .send()
+      ).body,
+    ).toEqual({
+      status: 'ok',
+      applicationAddress: prepareEthAddress(appWallet.address),
+      authServiceProof: await DelegatedFs.createDelegateSignature(
+        prepareEthAddress(userMainWallet.address),
+        prepareEthAddress(userDelegatedWallet.address),
+        prepareEthAddress(appWallet.address),
+        new Wallet(getConfigData().signer),
+      ),
+      serviceProof: prepareEthSignature(serviceSignature),
+      userAddress: prepareEthAddress(userMainWallet.address),
+    })
+
+    expect(
+      extractSignerAddress(
+        DelegatedFs.getDelegatedText(userMainWallet.address, userDelegatedWallet.address, appWallet.address),
+        `0x${callbackData.proof}`,
+      ),
+    ).toStrictEqual(prepareEthAddress(authServiceWallet.address))
+
+    callbackFrameUrlMock.mockReset()
+    expect(callbackFrameUrlMock).toHaveBeenCalledTimes(0)
+    const answer2 = (await supertestApp.post(`/v1/authorization/answer`).send(answerData1)).body as IAnswerResponse
+    expect(answer2).toStrictEqual({ status: 'error', message: 'Authorization request not found' })
+    expect(callbackFrameUrlMock).toHaveBeenCalledTimes(0)
+
+    const authRequest = await getAuthorizationRequestById(data.requestId)
+    expect(authRequest?.status).toBe(AuthorizationRequestStatus.ACCEPTED)
+    expect(authRequest?.proof_signature).toHaveLength(SIGNATURE_LENGTH_WITHOUT_0x)
+    expect(authRequest?.proof_signature).toStrictEqual(callbackData.proof)
   })
 })

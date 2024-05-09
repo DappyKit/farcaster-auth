@@ -4,11 +4,11 @@ export interface ICreateAuthRequest {
    */
   messageBytesProof: string
   /**
-   * Address of a signer created for a user
+   * Delegated address of a signer created for a user by the 3rd party service. With 0x prefix.
    */
-  userSignerAddress: string
+  userDelegatedAddress: string
   /**
-   * Signature of the service to verify the user address
+   * Signature of the service to verify the user address. Without 0x prefix.
    */
   serviceSignature: string
 }

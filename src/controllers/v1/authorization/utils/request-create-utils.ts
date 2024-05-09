@@ -24,7 +24,8 @@ export interface IRequestAnswerData {
 export interface IRequestCreateData {
   fid: number
   appSignerAddress: string
-  userSignerAddress: string
+  userMainAddress: string
+  userDelegatedAddress: string
   serviceSignature: string
 }
 
@@ -90,21 +91,21 @@ export async function getRequestCreateData(
   data: ICreateAuthRequest,
 ): Promise<IRequestCreateData> {
   const { messageBytesProof, serviceSignature } = data
-  let { userSignerAddress } = data
+  let { userDelegatedAddress } = data
 
   if (!messageBytesProof) {
     throw new Error('"messageBytesProof" is required')
   }
 
-  if (!userSignerAddress) {
-    throw new Error('"userSignerAddress" is required')
+  if (!userDelegatedAddress) {
+    throw new Error('"userDelegatedAddress" is required')
   }
 
   if (!serviceSignature) {
     throw new Error('"serviceSignature" is required')
   }
 
-  userSignerAddress = prepareEthAddress(userSignerAddress)
+  userDelegatedAddress = prepareEthAddress(userDelegatedAddress)
   const proofData = await getInteractorInfo(neynarApiKey, messageBytesProof)
 
   if (!proofData.isValid) {
@@ -125,14 +126,15 @@ export async function getRequestCreateData(
     throw new Error(`Timestamp is outdated. Max ${MAX_REQUESTS_TIME_MINUTES} minutes allowed`)
   }
 
-  if (extractSignerAddress(userSignerAddress, serviceSignature) !== appData.signer_address) {
+  if (extractSignerAddress(userDelegatedAddress, serviceSignature) !== appData.signer_address) {
     throw new Error('Service signature is invalid')
   }
 
   return {
     fid: proofData.fid,
     appSignerAddress: appData.signer_address,
-    userSignerAddress,
+    userDelegatedAddress,
+    userMainAddress: proofData.custodyAddress,
     serviceSignature: prepareEthSignature(serviceSignature),
   }
 }

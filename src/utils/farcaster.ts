@@ -9,6 +9,7 @@ export interface InteractorInfo {
   inputValue: string
   url: string
   timestamp: string
+  custodyAddress: string
 }
 
 export async function getInteractorInfo(neynarApiKey: string, clickData: string): Promise<InteractorInfo> {
@@ -16,7 +17,7 @@ export async function getInteractorInfo(neynarApiKey: string, clickData: string)
   const result = await neynarClient.validateFrameAction(clickData)
 
   if (result.valid) {
-    const { fid, username, display_name, pfp_url } = result.action.interactor
+    const { fid, username, display_name, pfp_url, custody_address } = result.action.interactor
     const { url, timestamp } = result.action
     const inputValue = result.action.input?.text || ''
 
@@ -29,6 +30,7 @@ export async function getInteractorInfo(neynarApiKey: string, clickData: string)
       url,
       timestamp,
       inputValue,
+      custodyAddress: custody_address,
     }
   } else {
     throw new Error('Click data is not valid')

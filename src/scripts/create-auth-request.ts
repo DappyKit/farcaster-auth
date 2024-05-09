@@ -16,9 +16,10 @@ async function start() {
   const callbackUrl = process.env.TEST_CALLBACK_URL
   // address w/o 0x, lowercased
   const signerAddress = process.env.TEST_SIGNER_ADDRESS
+  const userMainSigner = process.env.TEST_USER_MAIN_SIGNER
   const targetUserId = 354669
 
-  if (!frameUrl || !callbackUrl || !signerAddress) {
+  if (!frameUrl || !callbackUrl || !signerAddress || !userMainSigner) {
     throw new Error('Please provide all required env variables')
   }
 
@@ -38,7 +39,8 @@ async function start() {
     user_fid: targetUserId,
     status: AuthorizationRequestStatus.PENDING,
     challenge: challenge.serialized,
-    user_signer_address: prepareEthAddress(userSigner.address),
+    user_main_address: prepareEthAddress(userMainSigner),
+    user_delegated_address: prepareEthAddress(userSigner.address),
     service_signature: '',
   })
 

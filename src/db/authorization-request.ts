@@ -24,9 +24,13 @@ export interface IAuthorizationRequest {
    */
   challenge: string
   /**
+   * The address that controls the user's FID.
+   */
+  user_main_address: string
+  /**
    * Signer created by 3rd party service for the user.
    */
-  user_signer_address: string
+  user_delegated_address: string
   /**
    * Signature of the user's address created by the 3rd party service. To verify that service initiated the request.
    */
@@ -125,6 +129,20 @@ export async function findSuccessfulRequest(
 ): Promise<IAuthorizationRequest | undefined> {
   return db<IAuthorizationRequest>(TABLE_NAME)
     .where({ user_fid: userFid, app_signer_address: appSignerAddress, status: AuthorizationRequestStatus.ACCEPTED })
+    .orderBy('id', 'desc')
+    .first()
+}
+
+export async function findSuccessfulRequestByAddresses(
+  userAddress: string,
+  appSignerAddress: string,
+): Promise<IAuthorizationRequest | undefined> {
+  return db<IAuthorizationRequest>(TABLE_NAME)
+    .where({
+      user_main_address: userAddress,
+      app_signer_address: appSignerAddress,
+      status: AuthorizationRequestStatus.ACCEPTED,
+    })
     .orderBy('id', 'desc')
     .first()
 }

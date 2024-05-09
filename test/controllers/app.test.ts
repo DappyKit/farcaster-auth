@@ -63,6 +63,7 @@ function mockInputData(fid: number, frameUrl: string, authorizedFrameUrl: string
       inputValue: foundItem.input,
       url: authorizedFrameUrl,
       timestamp: new Date().toISOString(),
+      custodyAddress: '',
     }
   })
 }

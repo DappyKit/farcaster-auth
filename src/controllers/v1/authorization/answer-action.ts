@@ -9,8 +9,9 @@ import {
   updateAuthorizationRequestStatus,
 } from '../../../db/authorization-request'
 import { getRequestAnswerData } from './utils/request-create-utils'
-import { signDelegatedAddress } from '../../../utils/crypto'
 import { callbackFrameUrl, ICallbackFailRequest, ICallbackSuccessRequest } from '../../../utils/http'
+import { DelegatedFs } from '../../../service/delegated-fs/delegated-fs'
+import { Wallet } from 'ethers'
 
 /**
  * Handles the answer of the user's answer to the challenge. Called from trusted Frame's service.
@@ -39,19 +40,28 @@ export default async (
       const data: ICallbackFailRequest = {
         success: false,
         requestId,
-        userSignerAddress: authRequest.user_signer_address,
+        userMainAddress: authRequest.user_main_address,
+        userDelegatedAddress: authRequest.user_delegated_address,
+        applicationAddress: authRequest.app_signer_address,
         errorMessage,
       }
       await callbackFrameUrl(app.callback_url, data)
       throw new Error(errorMessage)
     }
 
-    const proof = await signDelegatedAddress(signer, authRequest.user_signer_address)
+    const proof = await DelegatedFs.createDelegateSignature(
+      authRequest.user_main_address,
+      authRequest.user_delegated_address,
+      authRequest.app_signer_address,
+      new Wallet(signer),
+    )
     await setProofSignature(authRequest.id, proof)
     const data: ICallbackSuccessRequest = {
       success: true,
       requestId,
-      userSignerAddress: authRequest.user_signer_address,
+      userMainAddress: authRequest.user_main_address,
+      userDelegatedAddress: authRequest.user_delegated_address,
+      applicationAddress: authRequest.app_signer_address,
       proof,
     }
     await callbackFrameUrl(app.callback_url, data)
