@@ -22,7 +22,7 @@ Such applications can exist both within the Farcaster ecosystem and as independe
 
 To register your application for interaction with DappyKit within Farcaster, you need to do the following:
 - Create a Frame and insert the tag `<meta property="frame:owner" content="FID"/>`, where FID is the unique number of your account in Farcaster from which you will be registering the application.
-- Create a Callback URL that will receive events about successful user authentications.
+- Create a Callback URL that will receive events about user authentication events.
 - Create an ETH private key that will sign actions of your application.
 - Go to Frame DappyKit Auth and enter the public address of your ETH signer, Frame URL, and Callback service URL.
 - Done! After this, you can request access to the user's isolated data area, which is available only to the user and your application.
