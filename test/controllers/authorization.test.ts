@@ -292,7 +292,8 @@ describe('Authorization', () => {
         new Wallet(getConfigData().signer),
       ),
       serviceProof: prepareEthSignature(serviceSignature),
-      userAddress: prepareEthAddress(userMainWallet.address),
+      userMainAddress: prepareEthAddress(userMainWallet.address),
+      userDelegatedAddress: prepareEthAddress(userDelegatedWallet.address),
     })
 
     expect(

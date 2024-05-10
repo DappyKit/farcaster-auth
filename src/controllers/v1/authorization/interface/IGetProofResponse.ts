@@ -6,7 +6,11 @@ export interface IGetProofResponse {
   /**
    * User main address in the form of hex without 0x prefix
    */
-  userAddress: string
+  userMainAddress: string
+  /**
+   * Delegated address which created by 3rd party application for the user
+   */
+  userDelegatedAddress: string
   /**
    * Application address in the form of hex without 0x prefix
    */

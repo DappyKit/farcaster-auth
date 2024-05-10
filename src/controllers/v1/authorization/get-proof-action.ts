@@ -24,7 +24,8 @@ export default async (req: Request, res: Response<IGetProofResponse>, next: Next
 
     res.json({
       status: 'ok',
-      userAddress,
+      userMainAddress: authorizationRequest.user_main_address,
+      userDelegatedAddress: authorizationRequest.user_delegated_address,
       applicationAddress,
       authServiceProof: authorizationRequest.proof_signature,
       serviceProof: authorizationRequest.service_signature,
