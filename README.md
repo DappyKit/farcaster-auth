@@ -9,6 +9,8 @@ Such applications can exist both within the Farcaster ecosystem and as independe
 **Official URLs:**
 - [https://warpcast.com/dappykit/0x9bcfba07](https://warpcast.com/dappykit/0x9bcfba07) - Auth Frame.
 - [https://farcaster-auth-api.dappykit.org](https://farcaster-auth-api.dappykit.org/) - Auth Gateway.
+- [https://github.com/DappyKit/frame-examples](https://github.com/DappyKit/frame-examples) - Example of Auth intergration to a Frame.
+- [https://warpcast.com/dappykit/0x438dcb06](https://warpcast.com/dappykit/0x438dcb06) - Deployed Frame example.
 
 **Flow:**
 - The application creator registers the URL of their Frame in the system using the `/v1/app/create` endpoint.
