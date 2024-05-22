@@ -6,6 +6,10 @@ Authorized DappyKit applications in the form of Frames gain access to the user's
 
 Such applications can exist both within the Farcaster ecosystem and as independent, standalone applications both on the web and mobile.
 
+**Official URLs:**
+- [https://warpcast.com/dappykit/0x9bcfba07](https://warpcast.com/dappykit/0x9bcfba07) - Auth Frame.
+- [https://farcaster-auth-api.dappykit.org](https://farcaster-auth-api.dappykit.org/) - Auth Gateway.
+
 **Flow:**
 - The application creator registers the URL of their Frame in the system using the `/v1/app/create` endpoint.
 - A user of a third-party application can give access to read/write their DappyKit data through the DappyKit Auth Frame while using this application.
