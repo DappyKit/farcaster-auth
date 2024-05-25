@@ -39,10 +39,10 @@ export function assertStringLength(data: unknown, length: number): asserts data 
  *
  * @param value Value to check
  */
-export function isHexString(value: string): boolean {
+export function isHexString(value: unknown): value is string {
   const hexRegEx = /^[0-9A-Fa-f]*$/
 
-  return hexRegEx.test(value)
+  return hexRegEx.test(value as string)
 }
 
 /**

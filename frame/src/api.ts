@@ -50,8 +50,12 @@ export async function answerAuthRequest(
   return req.json()
 }
 
+/**
+ * Get the auth data.
+ * @param messageBytesProof Message bytes proof
+ */
 export async function getAuthData(messageBytesProof: string): Promise<IListResponse> {
-  const url = getUrl(`v1/authorization/list`)
+  const url = getUrl(`v1/authorization/list?rand=${Math.random()}`)
   const req = await fetch(url, {
     method: 'POST',
     headers: {

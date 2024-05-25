@@ -8,6 +8,7 @@ import { getAppByFid, getAppsCount } from '../../src/db/app'
 import { ICreateRequest } from '../../src/controllers/v1/app/interface/ICreateRequest'
 import { getConfigData, setConfigData } from '../../src/config'
 import { Wallet } from 'ethers'
+import { prepareEthAddress } from '../../src/utils/eth'
 
 export interface InputMock {
   /**
@@ -196,5 +197,51 @@ describe('App', () => {
     const data1 = (await supertestApp.post(`/v1/app/create`).send(postData2)).body
     expect(data1).toEqual({ status: 'ok' })
     expect(await getAppsCount()).toEqual(2)
+  })
+
+  it('should check app existence', async () => {
+    const fid = 123
+    const postData: ICreateRequest = {
+      frameUrlBytes: '0x123',
+      frameCallbackUrlBytes: '0x222',
+      frameSignerAddressBytes: '0x333',
+    }
+    const wallet = Wallet.createRandom()
+    const authorizedFrameUrl = 'https://auth-frame.com'
+    const frameUrl = 'https://example.com'
+    const callbackUrl = 'https://example.com/callback'
+    setConfigData({
+      ...getConfigData(),
+      authorizedFrameUrl,
+    })
+    mockInputData(fid, frameUrl, authorizedFrameUrl, [
+      {
+        bytes: postData.frameUrlBytes,
+        input: frameUrl,
+      },
+      {
+        bytes: postData.frameCallbackUrlBytes,
+        input: callbackUrl,
+      },
+      {
+        bytes: postData.frameSignerAddressBytes,
+        input: wallet.address,
+      },
+    ])
+
+    const data = (await supertestApp.post(`/v1/app/create`).send(postData)).body
+    expect(data).toEqual({ status: 'ok' })
+    expect(await getAppByFid(fid)).toBeDefined()
+    expect(await getAppsCount()).toEqual(1)
+
+    // check with the full address
+    const data1 = (await supertestApp.get(`/v1/app/exists?applicationAddress=${wallet.address}`).send()).body
+    expect(data1).toEqual({ status: 'ok', isExists: true })
+
+    // check with the prepared address
+    const data2 = (
+      await supertestApp.get(`/v1/app/exists?applicationAddress=${prepareEthAddress(wallet.address)}`).send()
+    ).body
+    expect(data2).toEqual({ status: 'ok', isExists: true })
   })
 })

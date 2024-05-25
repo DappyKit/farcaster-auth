@@ -1,5 +1,6 @@
-import { ethers, isHexString } from 'ethers'
+import { ethers } from 'ethers'
 import { Bytes, is0xHexString } from './bytes'
+import { isHexString } from '../utils'
 
 export type EthAddress = Bytes<20>
 export const ETH_ADDR_HEX_LENGTH = 40
