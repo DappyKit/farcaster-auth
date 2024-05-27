@@ -4,7 +4,7 @@ import { isWithinMaxMinutes } from '../../../../utils/time'
 import { MAX_REQUESTS_TIME_MINUTES } from '../../app/utils/app-create-utils'
 import { getAppBySignerAddress, getAppByUrl, IApp } from '../../../../db/app'
 import { extractSignerAddress } from '../../../../utils/crypto'
-import { is0xEthAddress, prepareEthAddress, prepareEthSignature } from '../../../../utils/eth'
+import { isAnyEthAddress, prepareEthAddress, prepareEthSignature } from '../../../../utils/eth'
 import { IAnswerRequest } from '../interface/IAnswerRequest'
 import {
   AuthorizationRequestStatus,
@@ -188,7 +188,7 @@ export function getRequestIsAuthorizedData(data: IIsAuthorizedRequest): { fid: n
     throw new Error('"appSignerAddress" is required')
   }
 
-  if (!is0xEthAddress(appSignerAddress)) {
+  if (!isAnyEthAddress(appSignerAddress)) {
     throw new Error('"appSignerAddress" is invalid ETH address')
   }
 

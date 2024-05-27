@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import { getAppBySignerAddress } from '../../../db/app'
-import { is0xEthAddress, isEthAddress, prepareEthAddress } from '../../../utils/eth'
+import { isAnyEthAddress, prepareEthAddress } from '../../../utils/eth'
 import { IExistsResponse } from './interface/IExistsResponse'
 
 export function getAppExistsParams(req: Request): { applicationAddress: string } {
@@ -10,7 +10,7 @@ export function getAppExistsParams(req: Request): { applicationAddress: string }
     throw new Error('"applicationAddress" is required')
   }
 
-  if (!is0xEthAddress(applicationAddress) && !isEthAddress(applicationAddress)) {
+  if (!isAnyEthAddress(applicationAddress)) {
     throw new Error('Invalid "applicationAddress"')
   }
 

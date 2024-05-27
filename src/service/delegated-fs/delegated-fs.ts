@@ -49,8 +49,14 @@ export class DelegatedFs {
    * @param userAddress User address
    * @param userDelegatedAddress User delegated address
    * @param applicationAddress Application address
+   * @param errorText Error text
    */
-  static getDelegatedText(userAddress: string, userDelegatedAddress: string, applicationAddress: string): string {
+  static getDelegatedText(
+    userAddress: string,
+    userDelegatedAddress: string,
+    applicationAddress: string,
+    errorText?: string,
+  ): string {
     userAddress = prepareEthAddress(userAddress)
     userDelegatedAddress = prepareEthAddress(userDelegatedAddress)
     applicationAddress = prepareEthAddress(applicationAddress)
@@ -60,7 +66,13 @@ export class DelegatedFs {
       throw new Error('Delegated text addresses must be unique')
     }
 
-    return `${userAddress}${userDelegatedAddress}${applicationAddress}`
+    let text = `${userAddress}${userDelegatedAddress}${applicationAddress}`
+
+    if (errorText) {
+      text = `ERROR${text}${errorText}`
+    }
+
+    return text
   }
 
   /**
@@ -69,15 +81,19 @@ export class DelegatedFs {
    * @param userDelegatedAddress User delegated address
    * @param applicationAddress Application address
    * @param signer Signer
+   * @param errorText Error text
    */
   static async createDelegateSignature(
     userAddress: string,
     userDelegatedAddress: string,
     applicationAddress: string,
     signer: ISigner,
+    errorText?: string,
   ): Promise<string> {
     return prepareEthSignature(
-      await signer.signMessage(DelegatedFs.getDelegatedText(userAddress, userDelegatedAddress, applicationAddress)),
+      await signer.signMessage(
+        DelegatedFs.getDelegatedText(userAddress, userDelegatedAddress, applicationAddress, errorText),
+      ),
     )
   }
 
