@@ -168,11 +168,11 @@ describe('Authorization', () => {
   })
 
   it('should reject authorization request', async () => {
-    const { userMainWallet, appWallet } = await insertMockedApp(mockInteractor)
+    const { userDelegatedWallet, appWallet } = await insertMockedApp(mockInteractor)
     const createData: ICreateAuthRequest = {
       messageBytesProof: '0x123',
-      userDelegatedAddress: userMainWallet.address,
-      serviceSignature: await appWallet.signMessage(prepareEthAddress(userMainWallet.address)),
+      userDelegatedAddress: userDelegatedWallet.address,
+      serviceSignature: await appWallet.signMessage(prepareEthAddress(userDelegatedWallet.address)),
     }
     const postData: IListRequest = {
       messageBytesProof: '0x123',
