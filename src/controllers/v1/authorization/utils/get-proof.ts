@@ -1,15 +1,15 @@
 import { IGetProofRequest } from '../interface/IGetProofRequest'
 import { Request } from 'express'
-import { is0xEthAddress, prepareEthAddress } from '../../../../utils/eth'
+import { isAnyEthAddress, prepareEthAddress } from '../../../../utils/eth'
 
 export function getGetProofParams(req: Request): IGetProofRequest {
   const { userAddress, applicationAddress } = req.query
 
-  if (!is0xEthAddress(userAddress)) {
+  if (!isAnyEthAddress(userAddress)) {
     throw new Error('Invalid "userAddress"')
   }
 
-  if (!is0xEthAddress(applicationAddress)) {
+  if (!isAnyEthAddress(applicationAddress)) {
     throw new Error('Invalid "applicationAddress"')
   }
 

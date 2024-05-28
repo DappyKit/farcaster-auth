@@ -1,16 +1,34 @@
 export interface ICallbackResult {
+  /**
+   * Indicates whether the request was successful.
+   */
   success: boolean
+  /**
+   * The ID of the request.
+   */
   requestId: number
+  /**
+   * User main address in the form of hex without 0x prefix.
+   */
   userMainAddress: string
+  /**
+   * User delegated address which created by 3rd party application for the user in the form of hex without 0x prefix.
+   */
   userDelegatedAddress: string
+  /**
+   * Application address in the form of hex without 0x prefix.
+   */
   applicationAddress: string
-}
-
-export interface ICallbackSuccessRequest extends ICallbackResult {
+  /**
+   * Authentication service proof in the form of hex without 0x prefix.
+   */
   proof: string
 }
 
-export interface ICallbackFailRequest extends ICallbackResult {
+export interface ICallbackSuccessRequest extends ICallbackResult {}
+
+export interface ICallbackFailRequest extends Omit<ICallbackResult, 'success'> {
+  success: false
   errorMessage: string
 }
 

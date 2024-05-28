@@ -1,4 +1,4 @@
-import { is0xEthAddress } from '../../../../utils/eth'
+import { isAnyEthAddress, prepareEthAddress } from '../../../../utils/eth'
 import { Request } from 'express'
 
 /**
@@ -12,7 +12,7 @@ export function getUserAppParams(req: Request): { userAddress: string; applicati
     throw new Error('"userAddress" is required')
   }
 
-  if (!is0xEthAddress(userAddress)) {
+  if (!isAnyEthAddress(userAddress)) {
     throw new Error('Invalid "userAddress"')
   }
 
@@ -20,9 +20,9 @@ export function getUserAppParams(req: Request): { userAddress: string; applicati
     throw new Error('"applicationAddress" is required')
   }
 
-  if (!is0xEthAddress(applicationAddress)) {
+  if (!isAnyEthAddress(applicationAddress)) {
     throw new Error('Invalid "applicationAddress"')
   }
 
-  return { userAddress, applicationAddress }
+  return { userAddress: prepareEthAddress(userAddress), applicationAddress: prepareEthAddress(applicationAddress) }
 }

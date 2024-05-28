@@ -1,5 +1,6 @@
-import { ethers, isHexString } from 'ethers'
+import { ethers } from 'ethers'
 import { Bytes, is0xHexString } from './bytes'
+import { isHexString } from '../utils'
 
 export type EthAddress = Bytes<20>
 export const ETH_ADDR_HEX_LENGTH = 40
@@ -50,10 +51,22 @@ export function prepareEthAddress(address: string): string {
   return address.toLowerCase()
 }
 
+/**
+ * Prepares the Ethereum signature by removing the 0x prefix.
+ * @param signature Ethereum signature
+ */
 export function prepareEthSignature(signature: string): string {
   if (is0xEthSignature(signature)) {
     signature = signature.replace(/^0x/, '')
   }
 
   return signature
+}
+
+/**
+ * Checks if the value is any Ethereum address.
+ * @param value Value to check
+ */
+export function isAnyEthAddress(value: unknown): value is string {
+  return is0xEthAddress(value) || isEthAddress(value)
 }

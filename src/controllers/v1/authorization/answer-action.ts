@@ -12,6 +12,7 @@ import { getRequestAnswerData } from './utils/request-create-utils'
 import { callbackFrameUrl, ICallbackFailRequest, ICallbackSuccessRequest } from '../../../utils/http'
 import { DelegatedFs } from '../../../service/delegated-fs/delegated-fs'
 import { Wallet } from 'ethers'
+import { INVALID_CHALLENGE_ANSWER } from './utils/error-message'
 
 /**
  * Handles the answer of the user's answer to the challenge. Called from trusted Frame's service.
@@ -36,17 +37,25 @@ export default async (
       await updateAuthorizationRequestStatus(requestId, AuthorizationRequestStatus.ACCEPTED)
     } else {
       await updateAuthorizationRequestStatus(requestId, AuthorizationRequestStatus.INCORRECT)
-      const errorMessage = 'Invalid answer for the challenge'
+      const proof = await DelegatedFs.createDelegateSignature(
+        authRequest.user_main_address,
+        authRequest.user_delegated_address,
+        authRequest.app_signer_address,
+        new Wallet(signer),
+        INVALID_CHALLENGE_ANSWER,
+      )
       const data: ICallbackFailRequest = {
         success: false,
         requestId,
         userMainAddress: authRequest.user_main_address,
         userDelegatedAddress: authRequest.user_delegated_address,
         applicationAddress: authRequest.app_signer_address,
-        errorMessage,
+        errorMessage: INVALID_CHALLENGE_ANSWER,
+        proof,
       }
+
       await callbackFrameUrl(app.callback_url, data)
-      throw new Error(errorMessage)
+      throw new Error(INVALID_CHALLENGE_ANSWER)
     }
 
     const proof = await DelegatedFs.createDelegateSignature(
