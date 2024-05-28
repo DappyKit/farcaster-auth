@@ -25,7 +25,10 @@ import { insertMockedApp } from '../utils/app'
 import { DelegatedFs } from '../../src/service/delegated-fs/delegated-fs'
 import { Wallet } from 'ethers'
 import { getConfigData } from '../../src/config'
-import { INVALID_CHALLENGE_ANSWER } from '../../src/controllers/v1/authorization/utils/error-message'
+import {
+  INVALID_CHALLENGE_ANSWER,
+  USER_REJECTED_REQUEST,
+} from '../../src/controllers/v1/authorization/utils/error-message'
 
 const testDb = knex(configurations.development)
 
@@ -321,7 +324,7 @@ describe('Authorization', () => {
     expect(authRequest?.proof_signature).toStrictEqual(callbackData.proof)
   })
 
-  it('should get signed callback of rejected authorization request', async () => {
+  it('should get signed callback of incorrect answer of a authorization request', async () => {
     callbackFrameUrlMock.mockReset()
     mockCallbackFrameUrl({ success: true })
     const { userMainWallet, userDelegatedWallet, appWallet, authServiceWallet } = await insertMockedApp(mockInteractor)
@@ -371,6 +374,51 @@ describe('Authorization', () => {
 
     const authRequest = await getAuthorizationRequestById(data.requestId)
     expect(authRequest?.status).toBe(AuthorizationRequestStatus.INCORRECT)
+    expect(authRequest?.proof_signature).toHaveLength(0)
+  })
+
+  it('should get signed callback of a rejected authorization request', async () => {
+    callbackFrameUrlMock.mockReset()
+    mockCallbackFrameUrl({ success: true })
+    const { userMainWallet, userDelegatedWallet, appWallet, authServiceWallet } = await insertMockedApp(mockInteractor)
+    const serviceSignature = await appWallet.signMessage(prepareEthAddress(userDelegatedWallet.address))
+    const postData: ICreateAuthRequest = {
+      messageBytesProof: '0x123',
+      userDelegatedAddress: userDelegatedWallet.address,
+      serviceSignature,
+    }
+    const data = (await supertestApp.post(`/v1/authorization/create`).send(postData)).body as ICreateResponse
+    expect(data).toEqual({ status: 'ok', requestId: 1, answer: data.answer })
+
+    const postDataReject: IListRequest = {
+      messageBytesProof: '0x123',
+    }
+
+    expect(callbackFrameUrlMock).toHaveBeenCalledTimes(0)
+    const answer1 = (await supertestApp.post(`/v1/authorization/reject`).send(postDataReject)).body as IAnswerResponse
+    expect(answer1).toStrictEqual({ status: 'ok' })
+    expect(callbackFrameUrlMock).toHaveBeenCalledTimes(1)
+    const callbackData = callbackFrameUrlMock.mock.calls[0][1] as ICallbackFailRequest
+    expect(callbackData.userMainAddress).toEqual(prepareEthAddress(userMainWallet.address))
+    expect(callbackData.userDelegatedAddress).toEqual(prepareEthAddress(userDelegatedWallet.address))
+    expect(callbackData.applicationAddress).toEqual(prepareEthAddress(appWallet.address))
+    expect(callbackData.errorMessage).toEqual(USER_REJECTED_REQUEST)
+    expect(callbackData.success).toBeFalsy()
+
+    expect(
+      extractSignerAddress(
+        DelegatedFs.getDelegatedText(
+          userMainWallet.address,
+          userDelegatedWallet.address,
+          appWallet.address,
+          USER_REJECTED_REQUEST,
+        ),
+        `0x${callbackData.proof}`,
+      ),
+    ).toStrictEqual(prepareEthAddress(authServiceWallet.address))
+
+    const authRequest = await getAuthorizationRequestById(data.requestId)
+    expect(authRequest?.status).toBe(AuthorizationRequestStatus.REJECTED)
     expect(authRequest?.proof_signature).toHaveLength(0)
   })
 })
