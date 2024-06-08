@@ -3,7 +3,8 @@ import { getConfigData } from '../../../config'
 import { ICreateResponse } from './interface/ICreateResponse'
 import { getAppBySignerAddress, upsertApp } from '../../../db/app'
 import { ICreateRequest } from './interface/ICreateRequest'
-import { getAppCreateData } from './utils/app-create-utils'
+import { exportFrameToClickcaster, getAppCreateData } from './utils/app-create-utils'
+import { Wallet } from 'ethers'
 
 /**
  * Creates an app with messages from the trusted Frame.
@@ -17,7 +18,7 @@ export default async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const { neynarApiKey, authorizedFrameUrl } = getConfigData()
+    const { neynarApiKey, authorizedFrameUrl, signer, clickcasterExportUrl } = getConfigData()
     const { frameUrl, frameCallbackUrl, frameOwnerFid, signerAddress } = await getAppCreateData(
       neynarApiKey,
       authorizedFrameUrl,
@@ -35,6 +36,12 @@ export default async (
       callback_url: frameCallbackUrl,
       signer_address: signerAddress,
     })
+
+    try {
+      await exportFrameToClickcaster(clickcasterExportUrl, frameOwnerFid, frameUrl, signerAddress, new Wallet(signer))
+    } catch (e) {
+      console.error('Error exporting frame to Clickcaster', e) // eslint-disable-line no-console
+    }
 
     res.json({
       status: 'ok',

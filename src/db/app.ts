@@ -15,6 +15,13 @@ export interface IApp {
   updated_at: string
 }
 
+/**
+ * Gets all apps.
+ */
+export async function getAllApps(): Promise<IApp[]> {
+  return db(TABLE_NAME).select('*')
+}
+
 export async function upsertApp(userData: Omit<IApp, 'created_at' | 'updated_at'>): Promise<void> {
   const date = db.fn.now()
   const newItem = { ...userData, updated_at: date }

@@ -304,7 +304,7 @@ app.frame('/register-app', async c => {
       updateSession(currentSession, { ethAddress: inputText || '', ethAddressBytes: messageBytes })
     } else if (previousScreen === SCREEN_SAVE_FRAME) {
       nextScreen = SCREEN_SAVE_CALLBACK
-      intents.unshift(<TextInput placeholder="Enter Callback URL" />)
+      intents.unshift(<TextInput placeholder="Enter Webhook URL" />)
       updateSession(currentSession, { frameUrl: inputText || '', frameUrlBytes: messageBytes })
     } else if (previousScreen === SCREEN_SAVE_CALLBACK) {
       updateSession(currentSession, { callbackUrl: inputText || '', callbackUrlBytes: messageBytes })
@@ -322,7 +322,11 @@ app.frame('/register-app', async c => {
       validateUrl(sessionData.callbackUrl)
 
       const { ethAddressBytes, frameUrlBytes, callbackUrlBytes } = sessionData
-      await createApp(ethAddressBytes, frameUrlBytes, callbackUrlBytes)
+      const createResponse = await createApp(ethAddressBytes, frameUrlBytes, callbackUrlBytes)
+
+      if (createResponse.status !== 'ok') {
+        throw new Error(`Failed to create an app: ${JSON.stringify(createResponse)}`)
+      }
       sessions.delete(currentSession)
 
       intents = [
@@ -354,7 +358,7 @@ app.frame('/register-app', async c => {
             <Text align="center" size="18">
               {previousScreen === SCREEN_START && 'Enter your Ethereum address'}
               {previousScreen === SCREEN_SAVE_ETH && 'Enter your Frame URL'}
-              {previousScreen === SCREEN_SAVE_FRAME && 'Enter your Callback URL'}
+              {previousScreen === SCREEN_SAVE_FRAME && 'Enter your Webhook URL'}
               {previousScreen === SCREEN_SAVE_CALLBACK && 'Your application registered successfully!'}
             </Text>
           </VStack>

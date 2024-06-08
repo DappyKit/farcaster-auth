@@ -33,6 +33,11 @@ export interface IConfigData {
    * IPFS URL
    */
   ipfsUrl: string
+
+  /**
+   * Clickcaster export URL
+   */
+  clickcasterExportUrl: string
 }
 
 /**
@@ -45,6 +50,7 @@ let configData: IConfigData = {
   signer: '',
   pinataJWT: '',
   ipfsUrl: '',
+  clickcasterExportUrl: '',
 }
 
 /**
@@ -75,12 +81,17 @@ export function loadConfig(): void {
     throw new Error('IPFS_URL env variable not set')
   }
 
+  if (!process.env.CLICKCASTER_EXPORT_URL) {
+    throw new Error('CLICKCASTER_EXPORT_URL env variable not set')
+  }
+
   configData.neynarApiKey = process.env.NEYNAR_API_KEY
   configData.publicUrl = process.env.PUBLIC_URL
   configData.authorizedFrameUrl = process.env.AUTHORIZED_FRAME_URL
   configData.signer = process.env.SIGNER
   configData.pinataJWT = process.env.PINATA_JWT
   configData.ipfsUrl = process.env.IPFS_URL
+  configData.clickcasterExportUrl = process.env.CLICKCASTER_EXPORT_URL
 }
 
 /**
