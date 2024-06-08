@@ -139,7 +139,7 @@ export async function exportFrameToClickcaster(
   signerAddress: string,
   signer: ISigner,
 ): Promise<Response> {
-  const signature = signer.signMessage(`${fid.toString()}${frameUrl}${prepareEthAddress(signerAddress)}`)
+  const signature = await signer.signMessage(`${fid.toString()}${frameUrl}${prepareEthAddress(signerAddress)}`)
 
   return postJsonData(clickcasterExportUrl, {
     fid,
