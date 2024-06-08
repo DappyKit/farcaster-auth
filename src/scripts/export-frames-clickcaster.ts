@@ -11,14 +11,10 @@ async function start() {
   const apps = await getAllApps()
   console.log('Found apps:', apps.length) // eslint-disable-line no-console
   for (const [index, app] of apps.entries()) {
-    const response = await exportFrameToClickcaster(
-      clickcasterExportUrl,
-      app.fid,
-      app.frame_url,
-      app.signer_address,
-      mainSigner,
-    )
-    console.log(`[${(index + 1) / apps.length}] Exported frame response:`, response) // eslint-disable-line no-console
+    const response = (
+      await exportFrameToClickcaster(clickcasterExportUrl, app.fid, app.frame_url, app.signer_address, mainSigner)
+    ).json()
+    console.log(`[${index + 1} / ${apps.length}] Exported frame response:`, response) // eslint-disable-line no-console
   }
 
   process.exit(0)
