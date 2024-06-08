@@ -4,6 +4,8 @@ import { validateFrameUrl } from '../../../../utils/frame'
 import { isWithinMaxMinutes } from '../../../../utils/time'
 import { prepareEthAddress } from '../../../../utils/eth'
 import { prepareUrl } from '../../../../utils/url'
+import { ISigner } from '../../../../service/delegated-fs/interfaces'
+import { postJsonData } from '../../../../utils/http'
 
 export const MAX_REQUESTS_TIME_MINUTES = 10
 
@@ -120,4 +122,29 @@ export async function getAppCreateData(
     profileImage: frameUrlData.pfp_url,
     signerAddress,
   }
+}
+
+/**
+ * Exports the frame to Clickcaster.
+ * @param clickcasterExportUrl Clickcaster export URL
+ * @param fid Frame owner FID
+ * @param frameUrl Frame URL
+ * @param signerAddress Signer address
+ * @param signer Signer
+ */
+export async function exportFrameToClickcaster(
+  clickcasterExportUrl: string,
+  fid: number,
+  frameUrl: string,
+  signerAddress: string,
+  signer: ISigner,
+): Promise<Response> {
+  const signature = signer.signMessage(`${fid.toString()}${frameUrl}${prepareEthAddress(signerAddress)}`)
+
+  return postJsonData(clickcasterExportUrl, {
+    fid,
+    frameUrl,
+    signerAddress,
+    signature,
+  })
 }

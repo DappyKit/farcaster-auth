@@ -92,3 +92,18 @@ export async function callbackFrameUrl(url: string, data: ICallbackResult): Prom
     }
   }
 }
+
+/**
+ * Makes an HTTP POST request to the specified URL with the provided data.
+ * @param url The URL to which the POST request should be sent.
+ * @param data The data to be sent with the POST request. This data is converted into a JSON string for the request body.
+ */
+export async function postJsonData(url: string, data: unknown): Promise<Response> {
+  return fetch(url, {
+    body: JSON.stringify(data),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    method: 'POST',
+  })
+}
